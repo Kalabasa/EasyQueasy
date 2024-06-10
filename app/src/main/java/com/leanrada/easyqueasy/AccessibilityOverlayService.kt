@@ -56,7 +56,8 @@ class AccessibilityOverlayService : AccessibilityService(), SavedStateRegistryOw
             height = ViewGroup.LayoutParams.MATCH_PARENT
             type = WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY
             format = PixelFormat.TRANSPARENT
-            flags = WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
+            flags =
+                WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
         }
 
         try {
