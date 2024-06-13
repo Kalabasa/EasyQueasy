@@ -14,6 +14,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -21,7 +22,6 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
@@ -40,11 +40,11 @@ class MainActivity : ComponentActivity() {
             EasyQueasyTheme {
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
-                    floatingActionButton = { ToggleButton() }) { innerPadding ->
-                    Text(
-                        text = "Hello from MainActivity",
-                        modifier = Modifier.padding(innerPadding)
-                    )
+                    floatingActionButton = { ToggleButton() }
+                ) { innerPadding ->
+                    Box(modifier = Modifier.padding(innerPadding)) {
+                        OnboardingScreen()
+                    }
                 }
             }
         }
@@ -56,7 +56,7 @@ fun ToggleButton() {
     val activity = LocalContext.current.getActivity()
     FloatingActionButton(onClick = {
     }) {
-        Icon(imageVector = Icons.Filled.PlayArrow, contentDescription = "Start")
+        Icon(Icons.Filled.PlayArrow, "Start")
     }
 }
 
