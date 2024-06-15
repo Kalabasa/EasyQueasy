@@ -1,4 +1,4 @@
-package com.leanrada.easyqueasy
+package com.leanrada.easyqueasy.services
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -14,6 +14,7 @@ import android.view.ViewGroup
 import android.view.WindowManager
 import android.widget.LinearLayout
 import androidx.core.app.NotificationCompat
+import com.leanrada.easyqueasy.R
 
 class ForegroundOverlayService : Service() {
     override fun onStartCommand(intent: Intent?, startFlags: Int, startId: Int): Int {

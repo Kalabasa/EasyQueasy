@@ -1,6 +1,9 @@
+import com.google.protobuf.gradle.id
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
+    id("com.google.protobuf") version "0.9.4"
 }
 
 android {
@@ -9,7 +12,7 @@ android {
 
     defaultConfig {
         applicationId = "com.leanrada.easyqueasy"
-        minSdk = 24
+        minSdk = 27
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
@@ -47,7 +50,9 @@ android {
 }
 
 dependencies {
-
+    implementation(libs.protobuf.javalite)
+    implementation(libs.protobuf.kotlin.lite)
+    implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
@@ -62,6 +67,7 @@ dependencies {
     implementation(libs.androidx.runtime.android)
     implementation(libs.androidx.preference)
     implementation(libs.androidx.lifecycle.service)
+    implementation(libs.androidx.ui.text.google.fonts)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -69,4 +75,26 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+}
+
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:4.27.1"
+    }
+    plugins {
+        id("kotlin")
+    }
+    generateProtoTasks {
+        all().configureEach {
+            plugins {
+                id("kotlin") {
+                    option("lite")
+                }
+                id("java") {
+                    option("lite")
+                }
+            }
+        }
+    }
+
 }

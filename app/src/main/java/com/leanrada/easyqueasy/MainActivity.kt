@@ -1,5 +1,6 @@
 package com.leanrada.easyqueasy
 
+import AppDataOuterClass.DrawingMode
 import android.Manifest
 import android.content.Context
 import android.content.ContextWrapper
@@ -14,49 +15,61 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
-import com.leanrada.easyqueasy.ui.theme.EasyQueasyTheme
+import com.leanrada.easyqueasy.services.ForegroundOverlayService
+import com.leanrada.easyqueasy.ui.HomeScreen
+import com.leanrada.easyqueasy.ui.ModeSelectScreen
+import com.leanrada.easyqueasy.ui.theme.AppTheme
 
 class MainActivity : ComponentActivity() {
+    private lateinit var appData: AppDataClient
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
+        appData = AppDataClient(this)
         enableEdgeToEdge()
-        setContent {
-            EasyQueasyTheme {
-                Scaffold(
-                    modifier = Modifier.fillMaxSize(),
-                    floatingActionButton = { ToggleButton() }
-                ) { innerPadding ->
-                    Box(modifier = Modifier.padding(innerPadding)) {
-                        OnboardingScreen()
-                    }
-                }
+        setContent { App() }
+    }
+
+    @Composable
+    private fun App() {
+        var drawingMode by appData.rememberDrawingMode()
+        var onboarded by appData.rememberOnboarded()
+        var onboardedAccessibilitySettings by appData.rememberOnboardedAccessibilitySettings()
+
+        AppTheme {
+            when (drawingMode) {
+                DrawingMode.NONE ->
+                    ModeSelectScreen(
+                        appData = appData,
+                        onSelectDrawOverOtherApps = {
+                            drawingMode = DrawingMode.DRAW_OVER_OTHER_APPS
+                            onboarded = true
+                        },
+                        onSelectAccessibilityService = {
+                            drawingMode = DrawingMode.ACCESSIBILITY_SERVICE
+                            onboarded = true
+                        },
+                    )
+
+                else ->
+                    HomeScreen(
+                        appData = appData,
+                        onToggleOverlay = { startOverlayService(this) },
+                        tmp_onReset = {
+                            drawingMode = DrawingMode.NONE
+                            onboarded = false
+                            onboardedAccessibilitySettings = false
+                        }
+                    )
             }
         }
-    }
-}
-
-@Composable
-fun ToggleButton() {
-    val activity = LocalContext.current.getActivity()
-    FloatingActionButton(onClick = {
-    }) {
-        Icon(Icons.Filled.PlayArrow, "Start")
     }
 }
 
@@ -78,6 +91,7 @@ fun foregroundOverlayPermissionsEnsurer(context: Context?): (callback: () -> Uni
             }
         }
 
+    // TODO move to Permissions.kt
     val permissionsLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
             if (context != null && ContextCompat.checkSelfPermission(

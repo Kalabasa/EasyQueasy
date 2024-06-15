@@ -1,4 +1,4 @@
-package com.leanrada.easyqueasy
+package com.leanrada.easyqueasy.services
 
 import android.hardware.Sensor
 import android.hardware.SensorEvent
@@ -22,18 +22,23 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import com.leanrada.easyqueasy.AppDataClient
 import kotlin.math.abs
 import kotlin.math.hypot
 import kotlin.math.min
 import kotlin.math.pow
 import kotlin.math.sqrt
-import kotlin.time.Duration.Companion.seconds
 
 const val floatE = Math.E.toFloat()
 val hexRatio = 2f * sqrt(3f) / 3f
 
 @Composable
-fun Overlay(peripherySize: Dp) {
+fun Overlay(appData: AppDataClient, peripherySize: Dp) {
+    val drawingMode by appData.rememberDrawingMode()
+    Log.d("Overlay", "drawingMode: $drawingMode")
+    val overlayAreaSize by appData.rememberOverlayAreaSize()
+    Log.d("Overlay", "overlayAreaSize: $overlayAreaSize")
+
     val sensorManager = ContextCompat.getSystemService(LocalContext.current, SensorManager::class.java)
 
     val position = remember { mutableStateListOf(0f, 0f, 0f) }
@@ -84,7 +89,9 @@ fun Overlay(peripherySize: Dp) {
     Canvas(modifier = Modifier.fillMaxSize()) {
         val baseDotRadius = 4.dp.toPx() * effectIntensity
         if (baseDotRadius > 1e-12) {
-            val scaledPeripherySizePx = peripherySize.toPx() * lerp(0.4f, 1f, effectIntensity).pow(2f)
+            val scaledPeripherySizePx = peripherySize.toPx() *
+                    lerp(0.2f, 1f, overlayAreaSize) *
+                    lerp(0.4f, 1f, effectIntensity).pow(2f)
 
             val offsetXPx = position[0] * 1587f.dp.toPx()
             val offsetYPx = position[1] * 1587f.dp.toPx()

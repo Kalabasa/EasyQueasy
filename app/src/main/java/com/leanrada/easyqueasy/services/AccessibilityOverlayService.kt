@@ -1,14 +1,16 @@
-package com.leanrada.easyqueasy
+package com.leanrada.easyqueasy.services
 
 import android.accessibilityservice.AccessibilityService
 import android.content.Intent
 import android.graphics.PixelFormat
-import android.hardware.SensorManager
 import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
@@ -18,6 +20,7 @@ import androidx.savedstate.SavedStateRegistry
 import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
+import com.leanrada.easyqueasy.AppDataClient
 
 class AccessibilityOverlayService : AccessibilityService(), SavedStateRegistryOwner {
     private val lifecycleDispatcher = ServiceLifecycleDispatcher(this)
@@ -30,11 +33,21 @@ class AccessibilityOverlayService : AccessibilityService(), SavedStateRegistryOw
 
         savedStateRegistryController.performRestore(null)
 
+        val appData = AppDataClient(this)
+
         contentView = ComposeView(this).apply {
             setViewTreeLifecycleOwner(this@AccessibilityOverlayService)
             setViewTreeSavedStateRegistryOwner(this@AccessibilityOverlayService)
             setContent {
-                Overlay(peripherySize = 120.dp)
+                var onboardedAccessibilitySettings by appData.rememberOnboardedAccessibilitySettings()
+
+                LaunchedEffect(onboardedAccessibilitySettings) {
+                    if (!onboardedAccessibilitySettings) {
+                        onboardedAccessibilitySettings = true
+                    }
+                }
+
+                Overlay(appData = appData, peripherySize = 180.dp)
             }
         }
     }
@@ -42,6 +55,7 @@ class AccessibilityOverlayService : AccessibilityService(), SavedStateRegistryOw
     @Deprecated("Deprecated in super")
     override fun onStart(intent: Intent?, startId: Int) {
         lifecycleDispatcher.onServicePreSuperOnStart();
+        @Suppress("DEPRECATION")
         super.onStart(intent, startId)
     }
 

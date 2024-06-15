@@ -20,7 +20,7 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:label="@string/title_activity_main"
+            android:label="@string/easy_queasy"
             android:theme="@style/Theme.EasyQueasy">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -30,9 +30,10 @@
         </activity>
 
         <service
-            android:name=".AccessibilityOverlayService"
+            android:name=".services.AccessibilityOverlayService"
             android:enabled="true"
             android:exported="false"
+            android:process=":accessibility_overlay"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
             <intent-filter>
                 <action android:name="android.accessibilityservice.AccessibilityService" />
@@ -40,9 +41,10 @@
         </service>
 
         <service
-            android:name=".ForegroundOverlayService"
+            android:name=".services.ForegroundOverlayService"
             android:enabled="true"
             android:exported="false"
+            android:process=":foreground_overlay"
             android:foregroundServiceType="health" />
     </application>
 
