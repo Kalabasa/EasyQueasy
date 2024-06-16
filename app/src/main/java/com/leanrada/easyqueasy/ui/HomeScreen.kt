@@ -2,6 +2,7 @@ package com.leanrada.easyqueasy.ui
 
 import AppDataOuterClass.DrawingMode
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -178,6 +179,7 @@ fun GetStartedChecklistItem(content: @Composable () -> Unit) {
 
 @Composable
 private fun SettingsSection(appData: AppDataClient) {
+    var context = LocalContext.current
     var drawingMode by appData.rememberDrawingMode()
 
     val (overlayAreaSize, setOverlayAreaSize) = appData.rememberOverlayAreaSize()
@@ -194,7 +196,7 @@ private fun SettingsSection(appData: AppDataClient) {
             modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
         )
         Surface(
-            onClick = {},
+            onClick = { Toast.makeText(context, "Color schemes not implemented yet!", Toast.LENGTH_SHORT).show() },
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(Modifier.padding(horizontal = 24.dp, vertical = 8.dp)) {

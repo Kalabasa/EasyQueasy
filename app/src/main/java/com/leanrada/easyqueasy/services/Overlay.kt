@@ -33,7 +33,6 @@ val hexRatio = 2f * sqrt(3f) / 3f
 
 @Composable
 fun Overlay(appData: AppDataClient, peripherySize: Dp) {
-    val drawingMode by appData.rememberDrawingMode()
     val overlayAreaSize by appData.rememberOverlayAreaSize()
     val overlaySpeed by appData.rememberOverlaySpeed()
 
