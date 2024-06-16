@@ -4,7 +4,6 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
-import android.util.Log
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -35,9 +34,8 @@ val hexRatio = 2f * sqrt(3f) / 3f
 @Composable
 fun Overlay(appData: AppDataClient, peripherySize: Dp) {
     val drawingMode by appData.rememberDrawingMode()
-    Log.d("Overlay", "drawingMode: $drawingMode")
     val overlayAreaSize by appData.rememberOverlayAreaSize()
-    Log.d("Overlay", "overlayAreaSize: $overlayAreaSize")
+    val overlaySpeed by appData.rememberOverlaySpeed()
 
     val sensorManager = ContextCompat.getSystemService(LocalContext.current, SensorManager::class.java)
 
@@ -93,8 +91,9 @@ fun Overlay(appData: AppDataClient, peripherySize: Dp) {
                     lerp(0.2f, 1f, overlayAreaSize) *
                     lerp(0.4f, 1f, effectIntensity).pow(2f)
 
-            val offsetXPx = position[0] * 1587f.dp.toPx()
-            val offsetYPx = position[1] * 1587f.dp.toPx()
+            val speedFactor = lerp(0.2f, 2f, overlaySpeed)
+            val offsetXPx = position[0] * 1587f.dp.toPx() * speedFactor
+            val offsetYPx = position[1] * 1587f.dp.toPx() * speedFactor
 
             val gridSizeX = 60f.dp.toPx();
             val gridSizeY = gridSizeX / hexRatio;
