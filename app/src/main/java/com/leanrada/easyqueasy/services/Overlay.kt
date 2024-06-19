@@ -1,5 +1,6 @@
 package com.leanrada.easyqueasy.services
 
+import android.content.res.Configuration
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
@@ -17,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -33,6 +35,8 @@ val hexRatio = 2f * sqrt(3f) / 3f
 
 @Composable
 fun Overlay(appData: AppDataClient, peripherySize: Dp) {
+    val configuration = LocalConfiguration.current
+
     val overlayAreaSize by appData.rememberOverlayAreaSize()
     val overlaySpeed by appData.rememberOverlaySpeed()
 
@@ -51,15 +55,19 @@ fun Overlay(appData: AppDataClient, peripherySize: Dp) {
                 if (lastEventTimeNanos > 0) {
                     val dt = (event.timestamp - lastEventTimeNanos) * 1e-9f
 
-                    velocity[0] -= accelerationCurve(event.values[0] * dt)
-                    velocity[1] += accelerationCurve(event.values[1] * dt)
+                    val isPortrait = configuration.orientation == Configuration.ORIENTATION_PORTRAIT
+                    val accelerationX = event.values[if (isPortrait) 0 else 1]
+                    val accelerationY = event.values[if (isPortrait) 1 else 0]
+
+                    velocity[0] -= accelerationCurve(accelerationX * dt)
+                    velocity[1] += accelerationCurve(accelerationY * dt)
                     velocity[2] -= accelerationCurve(event.values[2] * dt)
 
                     position[0] += velocity[0] * dt
                     position[1] += velocity[1] * dt
                     position[2] += velocity[2] * dt
 
-                    val accel2D = hypot(event.values[0], event.values[1])
+                    val accel2D = hypot(accelerationX, accelerationY)
                     val speed2D = hypot(velocity[0], velocity[1])
 
                     val friction = 1 / (1 + dt * (8f + 16f / (1f + accel2D * 60f)))

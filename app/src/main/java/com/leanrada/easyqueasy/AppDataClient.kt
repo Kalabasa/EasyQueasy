@@ -6,68 +6,79 @@ import android.content.Context
 import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.datastore.core.CorruptionException
 import androidx.datastore.core.DataStore
 import androidx.datastore.core.MultiProcessDataStoreFactory
 import androidx.datastore.core.Serializer
 import com.google.protobuf.InvalidProtocolBufferException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
 
-class AppDataClient(context: Context) {
+
+class AppDataClient(context: Context, scope: CoroutineScope) {
     private val dataStore: DataStore<AppData> = MultiProcessDataStoreFactory.create(
         serializer = AppDataSerializer(),
         produceFile = {
             File("${context.cacheDir.path}/app_data.pb")
-        }
+        },
+        scope = scope
     )
+
+    @Composable
+    fun rememberLoaded(): State<Boolean> = dataStore.data.map { true }.collectAsState(initial = false)
 
     @Composable
     fun rememberOnboarded(): MutableState<Boolean> = rememberAppData(
         dataStore,
-        { it.onboarded },
-        { it, value -> it.onboarded = value },
+        { data -> data.hasOnboarded() },
+        { data -> data.onboarded },
+        { data, value -> data.onboarded = value },
     )
 
     @Composable
     fun rememberOnboardedAccessibilitySettings(): MutableState<Boolean> = rememberAppData(
         dataStore,
-        { it.onboardedAccessibilitySettings },
-        { it, value -> it.onboardedAccessibilitySettings = value },
+        { data -> data.hasOnboardedAccessibilitySettings() },
+        { data -> data.onboardedAccessibilitySettings },
+        { data, value -> data.onboardedAccessibilitySettings = value },
     )
 
     @Composable
     fun rememberDrawingMode(): MutableState<DrawingMode> = rememberAppData(
         dataStore,
-        { it.drawingMode },
-        { it, value -> it.drawingMode = value },
+        { data -> data.hasDrawingMode() },
+        { data -> data.drawingMode },
+        { data, value -> data.drawingMode = value },
     )
 
     @Composable
     fun rememberOverlayAreaSize(): MutableState<Float> = rememberAppData(
         dataStore,
-        { it.overlayAreaSize },
-        { it, value -> it.overlayAreaSize = value },
+        { data -> data.hasOverlayAreaSize() },
+        { data -> data.overlayAreaSize },
+        { data, value -> data.overlayAreaSize = value },
+        0.5f,
     )
 
     @Composable
     fun rememberOverlaySpeed(): MutableState<Float> = rememberAppData(
         dataStore,
-        { it.overlaySpeed },
-        { it, value -> it.overlaySpeed = value },
+        { data -> data.hasOverlaySpeed() },
+        { data -> data.overlaySpeed },
+        { data, value -> data.overlaySpeed = value },
+        0.5f,
     )
 }
 
 class AppDataSerializer : Serializer<AppData> {
-    override val defaultValue = AppData.getDefaultInstance()
+    override val defaultValue: AppData = AppData.getDefaultInstance()
 
     override suspend fun readFrom(input: InputStream): AppData =
         try {
@@ -84,24 +95,21 @@ class AppDataSerializer : Serializer<AppData> {
 @Composable
 private fun <T> rememberAppData(
     dataStore: DataStore<AppData>,
+    has: (AppData) -> Boolean,
     get: (AppData) -> T,
-    set: (AppData.Builder, value: T) -> Unit
+    set: (AppData.Builder, value: T) -> Unit,
+    initial: T = get(AppData.getDefaultInstance())
 ): MutableState<T> {
     val coroutineScope = rememberCoroutineScope()
 
-    val currentState = remember { mutableStateOf(get(AppData.getDefaultInstance())) }
-
-    dataStore.data
+    val state = dataStore.data
         .map { get(it) }
-        .onEach { currentState.value = it }
-        .collectAsState(initial = currentState.value)
+        .collectAsState(initial)
 
     return object : MutableState<T> {
         override var value: T
-            get() = currentState.value
+            get() = state.value
             set(value) {
-                val rollbackValue = currentState.value
-                currentState.value = value
                 coroutineScope.launch {
                     try {
                         dataStore.updateData {
@@ -110,8 +118,7 @@ private fun <T> rememberAppData(
                             builder.build()
                         }
                     } catch (e: Exception) {
-                        Log.e("EQ", e.toString())
-                        currentState.value = rollbackValue
+                        Log.e(this::class.simpleName, "Update data failed!", e)
                     }
                 }
             }

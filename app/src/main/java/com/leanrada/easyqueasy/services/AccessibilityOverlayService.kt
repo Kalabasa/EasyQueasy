@@ -15,6 +15,7 @@ import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ServiceLifecycleDispatcher
+import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.savedstate.SavedStateRegistry
 import androidx.savedstate.SavedStateRegistryController
@@ -33,7 +34,7 @@ class AccessibilityOverlayService : AccessibilityService(), SavedStateRegistryOw
 
         savedStateRegistryController.performRestore(null)
 
-        val appData = AppDataClient(this)
+        val appData = AppDataClient(this, lifecycleScope)
 
         contentView = ComposeView(this).apply {
             setViewTreeLifecycleOwner(this@AccessibilityOverlayService)
@@ -47,6 +48,7 @@ class AccessibilityOverlayService : AccessibilityService(), SavedStateRegistryOw
                     }
                 }
 
+                // TODO shared constant 180.dp
                 Overlay(appData = appData, peripherySize = 180.dp)
             }
         }
@@ -60,7 +62,7 @@ class AccessibilityOverlayService : AccessibilityService(), SavedStateRegistryOw
     }
 
     override fun onServiceConnected() {
-        Log.i("EQ", "AccessibilityOverlayService connected")
+        Log.i(this::class.simpleName, "Accessibility overlay service connected")
 
         val windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
 
@@ -77,7 +79,7 @@ class AccessibilityOverlayService : AccessibilityService(), SavedStateRegistryOw
         try {
             windowManager.addView(contentView, layoutParams)
         } catch (ex: Exception) {
-            Log.e("EQ", "adding view failed", ex)
+            Log.e(this::class.simpleName, "Adding overlay root view failed!", ex)
         }
     }
 
