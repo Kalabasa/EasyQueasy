@@ -219,7 +219,7 @@ private fun SettingsSection(appData: AppDataClient) {
             Slider(
                 value = overlayAreaSizeSliderState.value,
                 onValueChange = overlayAreaSizeSliderState.onValueChange,
-                valueRange = 0f..1f
+                valueRange = 0f..1f,
             )
         }
         Column(Modifier.padding(horizontal = 24.dp, vertical = 8.dp)) {
@@ -231,7 +231,7 @@ private fun SettingsSection(appData: AppDataClient) {
             Slider(
                 value = overlaySpeedSliderState.value,
                 onValueChange = overlaySpeedSliderState.onValueChange,
-                valueRange = 0f..1f
+                valueRange = 0f..1f,
             )
         }
         Surface(

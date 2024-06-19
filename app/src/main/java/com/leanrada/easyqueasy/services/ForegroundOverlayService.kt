@@ -23,6 +23,7 @@ import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.leanrada.easyqueasy.AppDataClient
 import com.leanrada.easyqueasy.R
+import com.leanrada.easyqueasy.ui.Overlay
 
 class ForegroundOverlayService : Service(), SavedStateRegistryOwner {
     private val lifecycleDispatcher = ServiceLifecycleDispatcher(this)

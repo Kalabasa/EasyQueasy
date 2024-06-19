@@ -21,6 +21,7 @@ import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.leanrada.easyqueasy.AppDataClient
+import com.leanrada.easyqueasy.ui.Overlay
 
 class AccessibilityOverlayService : AccessibilityService(), SavedStateRegistryOwner {
     private val lifecycleDispatcher = ServiceLifecycleDispatcher(this)
@@ -33,6 +34,7 @@ class AccessibilityOverlayService : AccessibilityService(), SavedStateRegistryOw
         savedStateRegistryController.performRestore(null)
 
         val appData = AppDataClient(this, lifecycleScope)
+
         contentView = ComposeView(this).apply {
             setViewTreeLifecycleOwner(this@AccessibilityOverlayService)
             setViewTreeSavedStateRegistryOwner(this@AccessibilityOverlayService)

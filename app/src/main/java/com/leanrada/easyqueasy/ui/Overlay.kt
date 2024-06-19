@@ -1,4 +1,4 @@
-package com.leanrada.easyqueasy.services
+package com.leanrada.easyqueasy.ui
 
 import android.content.res.Configuration
 import android.hardware.Sensor
@@ -49,6 +49,8 @@ fun Overlay(appData: AppDataClient, peripherySize: Dp = 180.dp) {
             override val value: Long = System.currentTimeMillis()
         }
     }
+
+    val requestingLivePreview = false
 
     val position = remember { mutableStateListOf(0f, 0f, 0f) }
     var effectIntensity by remember { mutableFloatStateOf(0f) }
@@ -102,15 +104,19 @@ fun Overlay(appData: AppDataClient, peripherySize: Dp = 180.dp) {
     }
 
     Canvas(modifier = Modifier.fillMaxSize()) {
+        val previewEffectIntensity = if (requestingLivePreview) 1f else effectIntensity
+
         val startupEffectProgress = (System.currentTimeMillis() - startTimeMillis).toFloat() / startEffectDurationMillis
-        val startupEffectActive = startupEffectProgress in 0f..1f
-        val baseDotRadius = 4.dp.toPx() * effectIntensity
+        val startupEffectActive = !requestingLivePreview && startupEffectProgress in 0f..1f
+
+        val baseDotRadius = 4.dp.toPx() * previewEffectIntensity
+
         if (baseDotRadius > 0.15f || startupEffectActive) {
             val scaledPeripherySizePx = peripherySize.toPx() *
                     lerp(0.2f, 1f, overlayAreaSize) *
-                    lerp(0.4f, 1f, effectIntensity).pow(2f)
+                    lerp(0.4f, 1f, previewEffectIntensity).pow(2f)
 
-            val speedFactor = lerp(0.2f, 2f, overlaySpeed)
+            val speedFactor = if (requestingLivePreview) 0f else lerp(0.2f, 2f, overlaySpeed)
             val offsetXPx = position[0] * 1587f.dp.toPx() * speedFactor
             val offsetYPx = position[1] * 1587f.dp.toPx() * speedFactor
 

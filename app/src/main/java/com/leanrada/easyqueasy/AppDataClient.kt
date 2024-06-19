@@ -21,7 +21,6 @@ import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
 
-
 class AppDataClient(context: Context, scope: CoroutineScope) {
     private val dataStore: DataStore<AppData> = MultiProcessDataStoreFactory.create(
         serializer = AppDataSerializer(),
