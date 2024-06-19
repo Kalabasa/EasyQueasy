@@ -12,7 +12,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
 import androidx.compose.ui.platform.ComposeView
-import androidx.compose.ui.unit.dp
 import androidx.core.app.NotificationCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ServiceLifecycleDispatcher
@@ -41,8 +40,7 @@ class ForegroundOverlayService : Service(), SavedStateRegistryOwner {
             setViewTreeLifecycleOwner(this@ForegroundOverlayService)
             setViewTreeSavedStateRegistryOwner(this@ForegroundOverlayService)
             setContent {
-                // TODO shared constant 180.dp
-                Overlay(appData = appData, peripherySize = 180.dp)
+                Overlay(appData = appData)
             }
         }
 

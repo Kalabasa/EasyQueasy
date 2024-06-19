@@ -9,6 +9,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateListOf
@@ -23,27 +24,36 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.core.math.MathUtils
 import com.leanrada.easyqueasy.AppDataClient
 import kotlin.math.abs
 import kotlin.math.hypot
+import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.pow
 import kotlin.math.sqrt
 
 const val floatE = Math.E.toFloat()
 val hexRatio = 2f * sqrt(3f) / 3f
+const val startEffectDurationMillis = 800L
 
 @Composable
-fun Overlay(appData: AppDataClient, peripherySize: Dp) {
+fun Overlay(appData: AppDataClient, peripherySize: Dp = 180.dp) {
     val configuration = LocalConfiguration.current
 
     val overlayAreaSize by appData.rememberOverlayAreaSize()
     val overlaySpeed by appData.rememberOverlaySpeed()
 
-    val sensorManager = ContextCompat.getSystemService(LocalContext.current, SensorManager::class.java)
+    val startTimeMillis by remember {
+        object : State<Long> {
+            override val value: Long = System.currentTimeMillis()
+        }
+    }
 
     val position = remember { mutableStateListOf(0f, 0f, 0f) }
     var effectIntensity by remember { mutableFloatStateOf(0f) }
+
+    val sensorManager = ContextCompat.getSystemService(LocalContext.current, SensorManager::class.java)
 
     DisposableEffect(sensorManager) {
         val accelerationListener = object : SensorEventListener {
@@ -92,8 +102,10 @@ fun Overlay(appData: AppDataClient, peripherySize: Dp) {
     }
 
     Canvas(modifier = Modifier.fillMaxSize()) {
+        val startupEffectProgress = (System.currentTimeMillis() - startTimeMillis).toFloat() / startEffectDurationMillis
+        val startupEffectActive = startupEffectProgress in 0f..1f
         val baseDotRadius = 4.dp.toPx() * effectIntensity
-        if (baseDotRadius > 1e-12) {
+        if (baseDotRadius > 0.15f || startupEffectActive) {
             val scaledPeripherySizePx = peripherySize.toPx() *
                     lerp(0.2f, 1f, overlayAreaSize) *
                     lerp(0.4f, 1f, effectIntensity).pow(2f)
@@ -110,13 +122,29 @@ fun Overlay(appData: AppDataClient, peripherySize: Dp) {
                     val pixelY = (y + 0.5f) * gridSizeY + offsetYPx % (gridSizeY * 2)
                     drawCircle(
                         color = Color.Black,
-                        radius = baseDotRadius * dotRadius(edgeDistance(pixelX, pixelY, size), scaledPeripherySizePx),
+                        radius = dotRadius(
+                            baseDotRadius,
+                            pixelX,
+                            pixelY,
+                            size,
+                            scaledPeripherySizePx,
+                            startupEffectActive,
+                            startupEffectProgress
+                        ),
                         center = Offset(pixelX, pixelY)
                     )
                     val whitePixelY = pixelY + gridSizeY * 0.6667f
                     drawCircle(
                         color = Color.White,
-                        radius = -1f + baseDotRadius * dotRadius(edgeDistance(pixelX, whitePixelY, size), scaledPeripherySizePx),
+                        radius = -1f + dotRadius(
+                            baseDotRadius,
+                            pixelX,
+                            whitePixelY,
+                            size,
+                            scaledPeripherySizePx,
+                            startupEffectActive,
+                            startupEffectProgress
+                        ),
                         center = Offset(pixelX, whitePixelY)
                     )
                 }
@@ -125,8 +153,27 @@ fun Overlay(appData: AppDataClient, peripherySize: Dp) {
     }
 }
 
-fun edgeDistance(x: Float, y: Float, size: Size) = min(min(x, y), min(size.width - x, size.height - y))
-fun dotRadius(edgeDistance: Float, peripherySize: Float) = sqrt(min(1f, 1.5f * (peripherySize - edgeDistance) / peripherySize))
-fun accelerationCurve(x: Float) = x * sigmoid01((abs(x) - 2e-12f) * 1e4f)
-fun sigmoid01(x: Float) = 1f / (1f + floatE.pow(-x))
-fun lerp(a: Float, b: Float, t: Float) = a + (b - a) * t
+private fun dotRadius(
+    baseDotRadius: Float,
+    x: Float,
+    y: Float,
+    screenSize: Size,
+    scaledPeripherySizePx: Float,
+    startupEffectActive: Boolean,
+    startupEffectProgress: Float
+) = (max(0f, baseDotRadius * dotRadiusFactor(edgeDistance(x, y, screenSize), scaledPeripherySizePx))
+        + startUpEffectRadius(startupEffectActive, startupEffectProgress, y, screenSize))
+
+private fun edgeDistance(x: Float, y: Float, screenSize: Size) = min(min(x, y), min(screenSize.width - x, screenSize.height - y))
+private fun dotRadiusFactor(edgeDistance: Float, peripherySize: Float) =
+    sqrt(MathUtils.clamp(1.5f * (peripherySize - edgeDistance) / peripherySize, 0f, 1f))
+
+private fun startUpEffectRadius(startupEffectActive: Boolean, startupEffectProgress: Float, y: Float, screenSize: Size): Float =
+    if (startupEffectActive)
+        40f * max(0f, 0.3f - abs((1f - y / screenSize.height) - lerp(-0.3f, 1.3f, startupEffectProgress.pow(1.3f))))
+    else
+        0f
+
+private fun accelerationCurve(x: Float) = x * sigmoid01((abs(x) - 2e-12f) * 1e4f)
+private fun sigmoid01(x: Float) = 1f / (1f + floatE.pow(-x))
+private fun lerp(a: Float, b: Float, t: Float) = a + (b - a) * t

@@ -12,7 +12,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.ComposeView
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ServiceLifecycleDispatcher
 import androidx.lifecycle.lifecycleScope
@@ -31,11 +30,9 @@ class AccessibilityOverlayService : AccessibilityService(), SavedStateRegistryOw
     override fun onCreate() {
         lifecycleDispatcher.onServicePreSuperOnCreate();
         super.onCreate()
-
         savedStateRegistryController.performRestore(null)
 
         val appData = AppDataClient(this, lifecycleScope)
-
         contentView = ComposeView(this).apply {
             setViewTreeLifecycleOwner(this@AccessibilityOverlayService)
             setViewTreeSavedStateRegistryOwner(this@AccessibilityOverlayService)
@@ -48,8 +45,7 @@ class AccessibilityOverlayService : AccessibilityService(), SavedStateRegistryOw
                     }
                 }
 
-                // TODO shared constant 180.dp
-                Overlay(appData = appData, peripherySize = 180.dp)
+                Overlay(appData = appData)
             }
         }
     }
