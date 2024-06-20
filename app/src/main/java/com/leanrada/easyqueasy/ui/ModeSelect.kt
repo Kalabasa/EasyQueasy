@@ -209,7 +209,7 @@ fun ModeSelect(
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 Text(
-                                    "Select mode",
+                                    "Select mode".uppercase(),
                                     style = MaterialTheme.typography.labelLarge,
                                 )
                             }

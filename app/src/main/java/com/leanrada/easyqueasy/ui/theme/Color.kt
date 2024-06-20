@@ -1,7 +1,7 @@
 package com.leanrada.easyqueasy.ui.theme
 import androidx.compose.ui.graphics.Color
 
-val disabledAlpha = 0.4f
+const val disabledAlpha = 0.3f
 
 val primaryLight = Color(0xFF516527)
 val onPrimaryLight = Color(0xFFFFFFFF)
