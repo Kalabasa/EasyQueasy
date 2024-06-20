@@ -13,15 +13,19 @@ import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
 import com.leanrada.easyqueasy.PermissionChecker.Status
 
 class PermissionChecker(
@@ -44,6 +48,16 @@ class Permissions {
             val onboardedAccessibilitySettings by appData.rememberOnboardedAccessibilitySettings()
 
             var invalidateCounter by remember { mutableIntStateOf(0) }
+
+            val lifecycleOwner = LocalLifecycleOwner.current
+            val lifecycleState by lifecycleOwner.lifecycle.currentStateFlow.collectAsState()
+
+            LaunchedEffect(lifecycleState == Lifecycle.State.RESUMED) {
+                if (lifecycleState == Lifecycle.State.RESUMED) {
+                    invalidateCounter++
+                }
+            }
+
             var savedCallback by remember { mutableStateOf({}) }
 
             val launcher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
