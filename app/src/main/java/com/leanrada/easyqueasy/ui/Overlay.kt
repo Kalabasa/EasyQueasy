@@ -59,7 +59,7 @@ fun Overlay(
 
     val overlayAreaSize by appData.rememberOverlayAreaSize()
     val overlaySpeed by appData.rememberOverlaySpeed()
-    val speedFactor by remember { derivedStateOf { lerp(0.2f, 2f, overlaySpeed) } }
+    val speedFactor by remember { derivedStateOf { lerp(0.4f, 3f, overlaySpeed) } }
 
     val startTimeMillis by remember {
         object : State<Long> {
