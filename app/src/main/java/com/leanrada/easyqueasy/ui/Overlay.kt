@@ -39,7 +39,7 @@ import kotlin.math.sqrt
 const val floatE = Math.E.toFloat()
 val hexRatio = 2f * sqrt(3f) / 3f
 val oneMeter = 1587f.dp
-const val startEffectDurationMillis = 800L
+const val startEffectDurationMillis = 700L
 
 enum class PreviewMode {
     NONE,
@@ -220,9 +220,13 @@ private fun dotRadiusFactor(edgeDistance: Float, peripherySize: Float) =
     sqrt(MathUtils.clamp(1.5f * (peripherySize - edgeDistance) / peripherySize, 0f, 1f))
 
 private fun startUpEffectRadius(startupEffectActive: Boolean, startupEffectProgress: Float, y: Float, screenSize: Size): Float =
-    if (startupEffectActive)
-        40f * max(0f, 0.3f - abs((1f - y / screenSize.height) - lerp(-0.3f, 1.3f, startupEffectProgress.pow(1.3f))))
-    else
+    if (startupEffectActive) {
+        val span = lerp(0.1f, 0.7f, startupEffectProgress)
+        12f * max(
+            0f,
+            (span - abs((1f - y / screenSize.height) - lerp(-0.1f, 1.7f, startupEffectProgress.pow(2f)))) / span
+        ).pow(2)
+    } else
         0f
 
 private fun accelerationCurve(x: Float) = x * sigmoid01((abs(x) - 2e-12f) * 1e4f)
