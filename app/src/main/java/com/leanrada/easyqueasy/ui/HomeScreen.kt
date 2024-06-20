@@ -1,6 +1,8 @@
 package com.leanrada.easyqueasy.ui
 
 import AppDataOuterClass.DrawingMode
+import android.content.Intent
+import android.provider.Settings
 import android.widget.Toast
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Column
@@ -9,6 +11,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -17,6 +20,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
@@ -44,6 +48,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import com.leanrada.easyqueasy.AppDataClient
 import com.leanrada.easyqueasy.PermissionChecker
 import com.leanrada.easyqueasy.Permissions
@@ -65,8 +70,12 @@ fun HomeScreen(
             TopBar(onLongPressIcon = debug_onReset)
         },
         floatingActionButton = {
-            if (drawingMode == DrawingMode.DRAW_OVER_OTHER_APPS && permissionChecker.status == PermissionChecker.Status.OK) {
-                ToggleButton(foregroundOverlayActive)
+            if (permissionChecker.status == PermissionChecker.Status.OK) {
+                if (drawingMode == DrawingMode.DRAW_OVER_OTHER_APPS) {
+                    ToggleButton(foregroundOverlayActive)
+                } else if (drawingMode == DrawingMode.ACCESSIBILITY_SERVICE) {
+                    OpenAccessibilitySettingsButton()
+                }
             }
         },
         modifier = Modifier.fillMaxSize(),
@@ -79,7 +88,11 @@ fun HomeScreen(
                 .verticalScroll(rememberScrollState())
         ) {
             GetStartedSection(permissionChecker)
-            SettingsSection(appData, setPreviewMode)
+            SettingsSection(
+                appData,
+                enabled = permissionChecker.status == PermissionChecker.Status.OK,
+                setPreviewMode = setPreviewMode
+            )
         }
     }
 
@@ -133,8 +146,8 @@ fun ToggleButton(overlayActive: MutableState<Boolean>) {
         else
             MaterialTheme.colorScheme.onPrimaryContainer,
         modifier = Modifier
-            .size((80 + 32).dp)
-            .padding(16.dp),
+            .padding(16.dp)
+            .size(80.dp),
     ) {
         Icon(
             imageVector =
@@ -142,9 +155,41 @@ fun ToggleButton(overlayActive: MutableState<Boolean>) {
                 Icons.Filled.Close
             else
                 Icons.Filled.PlayArrow,
-            contentDescription = "Start",
+            contentDescription = "Toggle overlay",
             modifier = Modifier.size(40.dp),
         )
+    }
+}
+
+@Composable
+fun OpenAccessibilitySettingsButton() {
+    val context = LocalContext.current
+    FloatingActionButton(
+        onClick = {
+            ContextCompat.startActivity(context, Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS), null)
+        },
+        shape = RoundedCornerShape(24.dp),
+        containerColor = MaterialTheme.colorScheme.tertiary,
+        contentColor = MaterialTheme.colorScheme.onTertiary,
+        modifier = Modifier
+            .padding(16.dp)
+            .height(80.dp),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(16.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Settings,
+                contentDescription = "",
+                modifier = Modifier.size(40.dp),
+            )
+            Spacer(Modifier.size(8.dp))
+            Text(
+                text = "Open settings".uppercase(),
+                style = MaterialTheme.typography.labelLarge,
+            )
+        }
     }
 }
 
@@ -225,9 +270,10 @@ fun GetStartedChecklistItem(content: @Composable () -> Unit) {
 }
 
 @Composable
-private fun SettingsSection(appData: AppDataClient, setPreviewMode: (value: PreviewMode) -> Unit = {}) {
+private fun SettingsSection(appData: AppDataClient, enabled: Boolean = false, setPreviewMode: (value: PreviewMode) -> Unit = {}) {
     val context = LocalContext.current
-    var drawingMode by appData.rememberDrawingMode()
+    val drawingMode by appData.rememberDrawingMode()
+    val alphaForEnabled = if (enabled) 1f else disabledAlpha
 
     val (overlayAreaSize, setOverlayAreaSize) = appData.rememberOverlayAreaSize()
     val overlayAreaSizeSliderState = rememberSliderState(overlayAreaSize, setOverlayAreaSize)
@@ -235,7 +281,7 @@ private fun SettingsSection(appData: AppDataClient, setPreviewMode: (value: Prev
     val (overlaySpeed, setOverlaySpeed) = appData.rememberOverlaySpeed()
     val overlaySpeedSliderState = rememberSliderState(overlaySpeed, setOverlaySpeed)
 
-    Column {
+    Column(Modifier.alpha(alphaForEnabled)) {
         Text(
             "Settings",
             style = MaterialTheme.typography.titleMedium,
@@ -243,7 +289,10 @@ private fun SettingsSection(appData: AppDataClient, setPreviewMode: (value: Prev
         )
         Surface(
             onClick = { Toast.makeText(context, "Color schemes not implemented yet!", Toast.LENGTH_SHORT).show() },
-            modifier = Modifier.fillMaxWidth().alpha(disabledAlpha),
+            enabled = enabled,
+            modifier = Modifier
+                .fillMaxWidth()
+                .alpha(disabledAlpha),
         ) {
             Column(Modifier.padding(horizontal = 24.dp, vertical = 8.dp)) {
                 Text(
@@ -257,13 +306,18 @@ private fun SettingsSection(appData: AppDataClient, setPreviewMode: (value: Prev
                 )
             }
         }
-        Column(Modifier.padding(horizontal = 24.dp, vertical = 8.dp)) {
+        Column(
+            Modifier
+                .padding(horizontal = 24.dp, vertical = 8.dp)
+                .alpha(alphaForEnabled)
+        ) {
             Text(
                 "Size",
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Bold
             )
             Slider(
+                enabled = enabled,
                 value = overlayAreaSizeSliderState.value,
                 onValueChange = {
                     overlayAreaSizeSliderState.onValueChange(it)
@@ -273,13 +327,18 @@ private fun SettingsSection(appData: AppDataClient, setPreviewMode: (value: Prev
                 valueRange = 0f..1f,
             )
         }
-        Column(Modifier.padding(horizontal = 24.dp, vertical = 8.dp)) {
+        Column(
+            Modifier
+                .padding(horizontal = 24.dp, vertical = 8.dp)
+                .alpha(alphaForEnabled)
+        ) {
             Text(
                 "Speed",
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Bold
             )
             Slider(
+                enabled = enabled,
                 value = overlaySpeedSliderState.value,
                 onValueChange = {
                     overlaySpeedSliderState.onValueChange(it)
