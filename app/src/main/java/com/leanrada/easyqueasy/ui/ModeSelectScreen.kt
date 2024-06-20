@@ -1,6 +1,7 @@
 package com.leanrada.easyqueasy.ui
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -40,13 +42,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.leanrada.easyqueasy.AppDataClient
+import com.leanrada.easyqueasy.R
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -65,6 +70,22 @@ fun ModeSelectScreen(
 
         BoxWithConstraints(modifier = Modifier.padding(innerPadding)) {
             val constraints = this
+
+            if (!onboarded) {
+                Image(
+                    painter = painterResource(R.mipmap.ic_launcher_foreground),
+                    contentDescription = "",
+                    modifier = Modifier
+                        .size(constraints.maxWidth)
+                        .align(Alignment.Center)
+                        .offset(
+                            x = constraints.maxWidth * -0.3f,
+                            y = constraints.maxWidth * -0.6f,
+                        )
+                        .alpha(0.15f),
+                )
+            }
+
             Column(
                 verticalArrangement = Arrangement.Center,
                 modifier = Modifier

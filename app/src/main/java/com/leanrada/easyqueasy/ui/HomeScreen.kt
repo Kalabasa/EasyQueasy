@@ -16,7 +16,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -96,14 +95,15 @@ private fun TopBar(onLongPressIcon: () -> Unit = {}) {
     TopAppBar(
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Filled.Face,
-                    contentDescription = "",
-                    modifier = Modifier.pointerInput(onLongPressIcon) {
-                        detectTapGestures(
-                            onLongPress = { onLongPressIcon() }
-                        )
-                    },
+                Text(
+                    text = "🍋",
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier
+                        .pointerInput(onLongPressIcon) {
+                            detectTapGestures(
+                                onLongPress = { onLongPressIcon() }
+                            )
+                        },
                 )
                 Spacer(Modifier.size(8.dp))
                 Text(

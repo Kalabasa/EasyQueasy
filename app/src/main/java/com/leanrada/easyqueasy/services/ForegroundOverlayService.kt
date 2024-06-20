@@ -27,7 +27,6 @@ import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.leanrada.easyqueasy.AppDataClient
 import com.leanrada.easyqueasy.MainActivity
-import com.leanrada.easyqueasy.R
 import com.leanrada.easyqueasy.ui.Overlay
 
 const val EXTRA_STOP = "stop"
@@ -122,7 +121,6 @@ class ForegroundOverlayService : Service(), SavedStateRegistryOwner {
                     PendingIntent.FLAG_IMMUTABLE
                 )
             )
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
             .build()
 
         ServiceCompat.startForeground(
