@@ -281,11 +281,13 @@ private fun SettingsSection(appData: AppDataClient, enabled: Boolean = false, se
     val (overlaySpeed, setOverlaySpeed) = appData.rememberOverlaySpeed()
     val overlaySpeedSliderState = rememberSliderState(overlaySpeed, setOverlaySpeed)
 
-    Column(Modifier.alpha(alphaForEnabled)) {
+    Column {
         Text(
             "Settings",
             style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
+            modifier = Modifier
+                .padding(horizontal = 24.dp, vertical = 8.dp)
+                .alpha(alphaForEnabled)
         )
         Surface(
             onClick = { Toast.makeText(context, "Color schemes not implemented yet!", Toast.LENGTH_SHORT).show() },
