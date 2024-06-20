@@ -33,7 +33,7 @@ class ForegroundOverlayService : Service(), SavedStateRegistryOwner {
     private lateinit var contentView: View
 
     override fun onCreate() {
-        lifecycleDispatcher.onServicePreSuperOnCreate();
+        lifecycleDispatcher.onServicePreSuperOnCreate()
         super.onCreate()
         savedStateRegistryController.performRestore(null)
 
@@ -51,7 +51,7 @@ class ForegroundOverlayService : Service(), SavedStateRegistryOwner {
 
     @Deprecated("Deprecated in super")
     override fun onStart(intent: Intent?, startId: Int) {
-        lifecycleDispatcher.onServicePreSuperOnStart();
+        lifecycleDispatcher.onServicePreSuperOnStart()
         @Suppress("DEPRECATION")
         super.onStart(intent, startId)
     }
@@ -69,7 +69,8 @@ class ForegroundOverlayService : Service(), SavedStateRegistryOwner {
             height = ViewGroup.LayoutParams.MATCH_PARENT
             type = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
             format = PixelFormat.TRANSPARENT
-            flags = WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
+            flags =
+                WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
         }
 
         try {
@@ -83,11 +84,15 @@ class ForegroundOverlayService : Service(), SavedStateRegistryOwner {
 
     override fun onBind(intent: Intent?): IBinder? {
         lifecycleDispatcher.onServicePreSuperOnBind()
+        return null
     }
 
     override fun onDestroy() {
         lifecycleDispatcher.onServicePreSuperOnDestroy()
         super.onDestroy()
+
+        val windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
+        windowManager.removeView(contentView)
     }
 
     private fun startNotificationService() {

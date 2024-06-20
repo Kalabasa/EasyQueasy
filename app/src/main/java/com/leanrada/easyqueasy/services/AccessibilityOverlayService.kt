@@ -54,7 +54,7 @@ class AccessibilityOverlayService : AccessibilityService(), SavedStateRegistryOw
 
     @Deprecated("Deprecated in super")
     override fun onStart(intent: Intent?, startId: Int) {
-        lifecycleDispatcher.onServicePreSuperOnStart();
+        lifecycleDispatcher.onServicePreSuperOnStart()
         @Suppress("DEPRECATION")
         super.onStart(intent, startId)
     }
