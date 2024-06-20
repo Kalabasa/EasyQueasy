@@ -287,8 +287,11 @@ private fun SettingsSection(appData: AppDataClient, setPreviewMode: (value: Prev
                 valueRange = 0f..1f,
             )
         }
+
+        var modeSelectDialogActive by remember { mutableStateOf(false) }
+
         Surface(
-            onClick = { drawingMode = DrawingMode.NONE },
+            onClick = { modeSelectDialogActive = true },
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(Modifier.padding(horizontal = 24.dp, vertical = 8.dp)) {
@@ -305,6 +308,12 @@ private fun SettingsSection(appData: AppDataClient, setPreviewMode: (value: Prev
                     },
                     style = MaterialTheme.typography.bodyMedium,
                 )
+            }
+        }
+
+        if (modeSelectDialogActive) {
+            ModeSelectDialog(appData = appData) {
+                modeSelectDialogActive = false
             }
         }
     }
