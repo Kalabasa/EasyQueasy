@@ -20,7 +20,8 @@
             android:name=".MainActivity"
             android:exported="true"
             android:label="@string/easy_queasy"
-            android:theme="@style/Theme.EasyQueasy">
+            android:theme="@style/Theme.EasyQueasy"
+            android:launchMode="singleInstance">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

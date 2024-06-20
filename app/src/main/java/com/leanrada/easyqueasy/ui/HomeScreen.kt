@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -116,14 +117,31 @@ private fun TopBar(onLongPressIcon: () -> Unit = {}) {
 
 @Composable
 fun ToggleButton(overlayActive: MutableState<Boolean>) {
-    FloatingActionButton(onClick = { overlayActive.value = !overlayActive.value }) {
+    FloatingActionButton(
+        onClick = { overlayActive.value = !overlayActive.value },
+        shape = RoundedCornerShape(24.dp),
+        containerColor =
+        if (overlayActive.value)
+            MaterialTheme.colorScheme.secondaryContainer
+        else
+            MaterialTheme.colorScheme.primaryContainer,
+        contentColor =
+        if (overlayActive.value)
+            MaterialTheme.colorScheme.onSecondaryContainer
+        else
+            MaterialTheme.colorScheme.onPrimaryContainer,
+        modifier = Modifier
+            .size((80 + 32).dp)
+            .padding(16.dp),
+    ) {
         Icon(
             imageVector =
             if (overlayActive.value)
                 Icons.Filled.Close
             else
                 Icons.Filled.PlayArrow,
-            contentDescription = "Start"
+            contentDescription = "Start",
+            modifier = Modifier.size(40.dp),
         )
     }
 }

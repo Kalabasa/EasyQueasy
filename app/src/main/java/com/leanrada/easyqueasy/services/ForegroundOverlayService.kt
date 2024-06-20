@@ -2,10 +2,13 @@ package com.leanrada.easyqueasy.services
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.graphics.PixelFormat
+import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import android.view.View
@@ -13,6 +16,7 @@ import android.view.ViewGroup
 import android.view.WindowManager
 import androidx.compose.ui.platform.ComposeView
 import androidx.core.app.NotificationCompat
+import androidx.core.app.ServiceCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ServiceLifecycleDispatcher
 import androidx.lifecycle.lifecycleScope
@@ -22,6 +26,7 @@ import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.leanrada.easyqueasy.AppDataClient
+import com.leanrada.easyqueasy.MainActivity
 import com.leanrada.easyqueasy.R
 import com.leanrada.easyqueasy.ui.Overlay
 
@@ -96,23 +101,40 @@ class ForegroundOverlayService : Service(), SavedStateRegistryOwner {
     }
 
     private fun startNotificationService() {
-        val channelID = "channel1"
+        val channelID = "overlay"
         val channel = NotificationChannel(
             channelID,
             "Overlay notification",
             NotificationManager.IMPORTANCE_LOW
         )
 
-        (getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
-            .createNotificationChannel(channel)
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.createNotificationChannel(channel)
 
         val notification = NotificationCompat.Builder(this, channelID)
             .setContentTitle("Easy Queasy running")
-            .setContentText("Tap to disable")
+            .setContentText("Tap to open")
+            .setContentIntent(
+                PendingIntent.getActivity(
+                    this,
+                    0,
+                    Intent(this, MainActivity::class.java),
+                    PendingIntent.FLAG_IMMUTABLE
+                )
+            )
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .build()
 
-        startForeground(1, notification)
+        ServiceCompat.startForeground(
+            /* service = */ this,
+            /* id = */ 1,
+            /* notification = */ notification,
+            /* foregroundServiceType = */
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+            else
+                0
+        )
     }
 
     override val lifecycle: Lifecycle
