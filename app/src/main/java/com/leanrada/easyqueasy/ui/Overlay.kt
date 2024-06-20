@@ -5,13 +5,17 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
+import android.util.Log
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.State
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -35,90 +39,133 @@ import kotlin.math.sqrt
 
 const val floatE = Math.E.toFloat()
 val hexRatio = 2f * sqrt(3f) / 3f
+val oneMeter = 1587f.dp
 const val startEffectDurationMillis = 800L
 
+enum class PreviewMode {
+    NONE,
+    SIZE,
+    SPEED
+}
+
 @Composable
-fun Overlay(appData: AppDataClient, peripherySize: Dp = 180.dp) {
+fun Overlay(
+    appData: AppDataClient,
+    peripherySize: Dp = 180.dp,
+    previewMode: PreviewMode = PreviewMode.NONE,
+) {
     val configuration = LocalConfiguration.current
+    val isPreview = previewMode != PreviewMode.NONE
 
     val overlayAreaSize by appData.rememberOverlayAreaSize()
     val overlaySpeed by appData.rememberOverlaySpeed()
+    val speedFactor by remember { derivedStateOf { lerp(0.2f, 2f, overlaySpeed) } }
 
     val startTimeMillis by remember {
         object : State<Long> {
             override val value: Long = System.currentTimeMillis()
         }
     }
-
-    val requestingLivePreview = false
+    var currentTimeMillis by remember { mutableLongStateOf(startTimeMillis) }
+    var timer by remember { mutableIntStateOf(0) }
 
     val position = remember { mutableStateListOf(0f, 0f, 0f) }
     var effectIntensity by remember { mutableFloatStateOf(0f) }
 
     val sensorManager = ContextCompat.getSystemService(LocalContext.current, SensorManager::class.java)
 
-    DisposableEffect(sensorManager) {
-        val accelerationListener = object : SensorEventListener {
-            var lastEventTimeNanos = 0L
-            val velocity = floatArrayOf(0f, 0f, 0f)
+    DisposableEffect(sensorManager, isPreview, timer) {
+        var accelerationListener: SensorEventListener? = null
 
-            override fun onSensorChanged(event: SensorEvent?) {
-                if (event == null) return
-                if (lastEventTimeNanos > 0) {
-                    val dt = (event.timestamp - lastEventTimeNanos) * 1e-9f
+        if (isPreview) {
+            val now = System.currentTimeMillis()
+            val dt = now - currentTimeMillis
+            currentTimeMillis = now
+            position[0] += 0.3f * speedFactor * dt
+            timer++
+        } else {
+            accelerationListener = object : SensorEventListener {
+                var lastEventTimeNanos = 0L
+                val velocity = floatArrayOf(0f, 0f, 0f)
 
-                    val isPortrait = configuration.orientation == Configuration.ORIENTATION_PORTRAIT
-                    val accelerationX = event.values[if (isPortrait) 0 else 1]
-                    val accelerationY = event.values[if (isPortrait) 1 else 0]
+                override fun onSensorChanged(event: SensorEvent?) {
+                    if (event == null) return
+                    if (lastEventTimeNanos > 0) {
+                        val dt = (event.timestamp - lastEventTimeNanos) * 1e-9f
 
-                    velocity[0] -= accelerationCurve(accelerationX * dt)
-                    velocity[1] += accelerationCurve(accelerationY * dt)
-                    velocity[2] -= accelerationCurve(event.values[2] * dt)
+                        val isPortrait = configuration.orientation == Configuration.ORIENTATION_PORTRAIT
+                        val accelerationX = event.values[if (isPortrait) 0 else 1]
+                        val accelerationY = event.values[if (isPortrait) 1 else 0]
 
-                    position[0] += velocity[0] * dt
-                    position[1] += velocity[1] * dt
-                    position[2] += velocity[2] * dt
+                        velocity[0] -= accelerationCurve(accelerationX * dt)
+                        velocity[1] += accelerationCurve(accelerationY * dt)
+                        velocity[2] -= accelerationCurve(event.values[2] * dt)
 
-                    val accel2D = hypot(accelerationX, accelerationY)
-                    val speed2D = hypot(velocity[0], velocity[1])
+                        position[0] += velocity[0] * dt
+                        position[1] += velocity[1] * dt
+                        position[2] += velocity[2] * dt
 
-                    val friction = 1 / (1 + dt * (8f + 16f / (1f + accel2D * 60f)))
-                    velocity[0] *= friction
-                    velocity[1] *= friction
-                    velocity[2] *= friction
+                        val accel2D = hypot(accelerationX, accelerationY)
+                        val speed2D = hypot(velocity[0], velocity[1])
 
-                    effectIntensity *= (1f - 0.2f.pow(72f * dt))
-                    effectIntensity = lerp(effectIntensity, 1f, 1f - (1f - sigmoid01((speed2D - 0.11f) * 60f)).pow(72f * dt))
+                        val friction = 1 / (1 + dt * (8f + 16f / (1f + accel2D * 60f)))
+                        velocity[0] *= friction
+                        velocity[1] *= friction
+                        velocity[2] *= friction
+
+                        effectIntensity *= (1f - 0.2f.pow(72f * dt))
+                        effectIntensity = lerp(effectIntensity, 1f, 1f - (1f - sigmoid01((speed2D - 0.11f) * 60f)).pow(72f * dt))
+                        currentTimeMillis = System.currentTimeMillis()
+                    }
+                    lastEventTimeNanos = event.timestamp
                 }
-                lastEventTimeNanos = event.timestamp
+
+                override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
             }
 
-            override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
+            sensorManager?.registerListener(
+                accelerationListener,
+                sensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION),
+                SensorManager.SENSOR_DELAY_FASTEST
+            )
         }
-        sensorManager?.registerListener(
-            accelerationListener, sensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION), SensorManager.SENSOR_DELAY_FASTEST
-        )
+
         onDispose {
-            sensorManager?.unregisterListener(accelerationListener)
+            if (accelerationListener != null) {
+                sensorManager?.unregisterListener(accelerationListener)
+            }
         }
     }
 
     Canvas(modifier = Modifier.fillMaxSize()) {
-        val previewEffectIntensity = if (requestingLivePreview) 1f else effectIntensity
+        Log.d("", "currentTimeMillis: $currentTimeMillis")
+        val finalEffectIntensity = when (previewMode) {
+            PreviewMode.NONE -> effectIntensity
+            else -> 1f
+        }
 
-        val startupEffectProgress = (System.currentTimeMillis() - startTimeMillis).toFloat() / startEffectDurationMillis
-        val startupEffectActive = !requestingLivePreview && startupEffectProgress in 0f..1f
+        val startupEffectProgress = (currentTimeMillis - startTimeMillis).toFloat() / startEffectDurationMillis
+        val startupEffectActive = !isPreview && startupEffectProgress in 0f..1f
 
-        val baseDotRadius = 4.dp.toPx() * previewEffectIntensity
+        val baseDotRadius = 4.dp.toPx() * finalEffectIntensity
 
         if (baseDotRadius > 0.15f || startupEffectActive) {
-            val scaledPeripherySizePx = peripherySize.toPx() *
-                    lerp(0.2f, 1f, overlayAreaSize) *
-                    lerp(0.4f, 1f, previewEffectIntensity).pow(2f)
+            val scaledPeripherySizePx = when (previewMode) {
+                PreviewMode.SPEED -> 30.dp.toPx()
+                else -> peripherySize.toPx() *
+                        lerp(0.2f, 1f, overlayAreaSize) *
+                        lerp(0.4f, 1f, finalEffectIntensity).pow(2f)
+            }
 
-            val speedFactor = if (requestingLivePreview) 0f else lerp(0.2f, 2f, overlaySpeed)
-            val offsetXPx = position[0] * 1587f.dp.toPx() * speedFactor
-            val offsetYPx = position[1] * 1587f.dp.toPx() * speedFactor
+            val (offsetXPx, offsetYPx) = when (previewMode) {
+                PreviewMode.NONE -> Pair(
+                    position[0] * oneMeter.toPx() * speedFactor,
+                    position[1] * oneMeter.toPx() * speedFactor
+                )
+
+                PreviewMode.SIZE -> Pair(0f, 0f)
+                PreviewMode.SPEED -> Pair(position[0], 0f)
+            }
 
             val gridSizeX = 60f.dp.toPx();
             val gridSizeY = gridSizeX / hexRatio;

@@ -30,6 +30,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -51,6 +53,7 @@ fun HomeScreen(
     val permissionChecker by Permissions.rememberPermissionChecker(appData)
     val loaded by appData.rememberLoaded()
     val drawingMode by appData.rememberDrawingMode()
+    val (previewMode, setPreviewMode) = remember { mutableStateOf(PreviewMode.NONE) }
 
     Scaffold(
         topBar = {
@@ -71,9 +74,16 @@ fun HomeScreen(
                 .verticalScroll(rememberScrollState())
         ) {
             GetStartedSection(permissionChecker)
-            SettingsSection(appData)
+            SettingsSection(appData, setPreviewMode)
             Button(onClick = tmp_onReset) {}
         }
+    }
+
+    if (previewMode != PreviewMode.NONE) {
+        Overlay(
+            appData = appData,
+            previewMode = previewMode,
+        )
     }
 }
 
@@ -178,7 +188,7 @@ fun GetStartedChecklistItem(content: @Composable () -> Unit) {
 }
 
 @Composable
-private fun SettingsSection(appData: AppDataClient) {
+private fun SettingsSection(appData: AppDataClient, setPreviewMode: (value: PreviewMode) -> Unit = {}) {
     val context = LocalContext.current
     var drawingMode by appData.rememberDrawingMode()
 
@@ -218,7 +228,11 @@ private fun SettingsSection(appData: AppDataClient) {
             )
             Slider(
                 value = overlayAreaSizeSliderState.value,
-                onValueChange = overlayAreaSizeSliderState.onValueChange,
+                onValueChange = {
+                    overlayAreaSizeSliderState.onValueChange(it)
+                    setPreviewMode(PreviewMode.SIZE)
+                },
+                onValueChangeFinished = { setPreviewMode(PreviewMode.NONE) },
                 valueRange = 0f..1f,
             )
         }
@@ -230,7 +244,11 @@ private fun SettingsSection(appData: AppDataClient) {
             )
             Slider(
                 value = overlaySpeedSliderState.value,
-                onValueChange = overlaySpeedSliderState.onValueChange,
+                onValueChange = {
+                    overlaySpeedSliderState.onValueChange(it)
+                    setPreviewMode(PreviewMode.SPEED)
+                },
+                onValueChangeFinished = { setPreviewMode(PreviewMode.NONE) },
                 valueRange = 0f..1f,
             )
         }
