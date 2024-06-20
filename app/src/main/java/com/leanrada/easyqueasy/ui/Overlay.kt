@@ -5,7 +5,6 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
-import android.util.Log
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -138,7 +137,6 @@ fun Overlay(
     }
 
     Canvas(modifier = Modifier.fillMaxSize()) {
-        Log.d("", "currentTimeMillis: $currentTimeMillis")
         val finalEffectIntensity = when (previewMode) {
             PreviewMode.NONE -> effectIntensity
             else -> 1f
@@ -167,8 +165,8 @@ fun Overlay(
                 PreviewMode.SPEED -> Pair(position[0], 0f)
             }
 
-            val gridSizeX = 60f.dp.toPx();
-            val gridSizeY = gridSizeX / hexRatio;
+            val gridSizeX = 60f.dp.toPx()
+            val gridSizeY = gridSizeX / hexRatio
             for (x in -2 until (size.width / gridSizeX + 2).toInt()) {
                 for (y in -2 until (size.height / gridSizeY + 2).toInt()) {
                     val pixelX = (x + 0.5f + (y % 2) * 0.5f) * gridSizeX + offsetXPx % gridSizeX

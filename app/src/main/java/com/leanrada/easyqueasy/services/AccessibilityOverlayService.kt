@@ -29,7 +29,7 @@ class AccessibilityOverlayService : AccessibilityService(), SavedStateRegistryOw
     private lateinit var contentView: View
 
     override fun onCreate() {
-        lifecycleDispatcher.onServicePreSuperOnCreate();
+        lifecycleDispatcher.onServicePreSuperOnCreate()
         super.onCreate()
         savedStateRegistryController.performRestore(null)
 
@@ -60,7 +60,7 @@ class AccessibilityOverlayService : AccessibilityService(), SavedStateRegistryOw
     }
 
     override fun onServiceConnected() {
-        Log.i(this::class.simpleName, "Accessibility overlay service connected")
+        Log.i(AccessibilityOverlayService::class.simpleName, "Accessibility overlay service connected")
 
         val windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
 
@@ -76,13 +76,13 @@ class AccessibilityOverlayService : AccessibilityService(), SavedStateRegistryOw
 
         try {
             windowManager.addView(contentView, layoutParams)
-        } catch (ex: Exception) {
-            Log.e(this::class.simpleName, "Adding overlay root view failed!", ex)
+        } catch (e: Exception) {
+            Log.e(AccessibilityOverlayService::class.simpleName, "Adding overlay root view failed!", e)
         }
     }
 
     override fun onDestroy() {
-        lifecycleDispatcher.onServicePreSuperOnDestroy();
+        lifecycleDispatcher.onServicePreSuperOnDestroy()
         super.onDestroy()
     }
 

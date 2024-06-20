@@ -25,6 +25,8 @@ import com.leanrada.easyqueasy.AppDataClient
 import com.leanrada.easyqueasy.R
 import com.leanrada.easyqueasy.ui.Overlay
 
+const val EXTRA_STOP = "stop"
+
 class ForegroundOverlayService : Service(), SavedStateRegistryOwner {
     private val lifecycleDispatcher = ServiceLifecycleDispatcher(this)
     private val savedStateRegistryController = SavedStateRegistryController.create(this)
@@ -47,8 +49,15 @@ class ForegroundOverlayService : Service(), SavedStateRegistryOwner {
 
     }
 
+    @Deprecated("Deprecated in super")
+    override fun onStart(intent: Intent?, startId: Int) {
+        lifecycleDispatcher.onServicePreSuperOnStart();
+        @Suppress("DEPRECATION")
+        super.onStart(intent, startId)
+    }
+
     override fun onStartCommand(intent: Intent?, startFlags: Int, startId: Int): Int {
-        Log.i(this::class.simpleName, "Foreground overlay service started")
+        Log.i(ForegroundOverlayService::class.simpleName, "Foreground overlay service started")
 
         startNotificationService()
 
@@ -65,15 +74,19 @@ class ForegroundOverlayService : Service(), SavedStateRegistryOwner {
 
         try {
             windowManager.addView(contentView, layoutParams)
-        } catch (ex: Exception) {
-            Log.e(this::class.simpleName, "Adding overlay root view failed!", ex)
+        } catch (e: Exception) {
+            Log.e(ForegroundOverlayService::class.simpleName, "Adding overlay root view failed!", e)
         }
 
         return START_STICKY
     }
 
+    override fun onBind(intent: Intent?): IBinder? {
+        lifecycleDispatcher.onServicePreSuperOnBind()
+    }
+
     override fun onDestroy() {
-        lifecycleDispatcher.onServicePreSuperOnDestroy();
+        lifecycleDispatcher.onServicePreSuperOnDestroy()
         super.onDestroy()
     }
 
@@ -95,10 +108,6 @@ class ForegroundOverlayService : Service(), SavedStateRegistryOwner {
             .build()
 
         startForeground(1, notification)
-    }
-
-    override fun onBind(intent: Intent?): IBinder? {
-        return null
     }
 
     override val lifecycle: Lifecycle

@@ -10,7 +10,6 @@ import android.content.pm.PackageManager.PERMISSION_GRANTED
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
-import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
@@ -46,7 +45,6 @@ class Permissions {
 
             var invalidateCounter by remember { mutableIntStateOf(0) }
             var savedCallback by remember { mutableStateOf({}) }
-            Log.d(this::class.simpleName, "invalidateCounter: $invalidateCounter")
 
             val launcher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
                 if (checkPermissions(context, drawingMode, onboardedAccessibilitySettings) == Status.OK) {
@@ -60,7 +58,6 @@ class Permissions {
                 override val value: PermissionChecker
                     get() {
                         val status = checkPermissions(context, drawingMode, onboardedAccessibilitySettings)
-                        Log.d(this::class.simpleName, "From state getter. status: $status")
                         return PermissionChecker(status) {
                             launcher.launch(
                                 when (status) {
@@ -84,10 +81,6 @@ class Permissions {
             drawingMode: DrawingMode,
             onboardedAccessibilitySettings: Boolean
         ): Status {
-            Log.d(
-                this::class.simpleName,
-                "While checkPermissions, drawingMode: $drawingMode, onboardedAccessibilitySettings: $onboardedAccessibilitySettings"
-            )
             return when (drawingMode) {
                 DrawingMode.DRAW_OVER_OTHER_APPS ->
                     if (Settings.canDrawOverlays(context))
@@ -112,7 +105,6 @@ class Permissions {
             val savedCallback: MutableState<(() -> Unit)?> = remember { mutableStateOf(null) }
 
             val permissionsLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
-                Log.d(this::class.simpleName, "permissionsLauncher done")
                 if (hasForegroundServicePermissions(context)) {
                     savedCallback.value?.invoke()
                     savedCallback.value = null
@@ -120,12 +112,9 @@ class Permissions {
             }
 
             return { callback ->
-                Log.d(this::class.simpleName, "ensuring permission...")
                 if (hasForegroundServicePermissions(context)) {
-                    Log.d(this::class.simpleName, "call callback")
                     callback()
                 } else {
-                    Log.d(this::class.simpleName, "save callback and launch permissionsLauncher")
                     savedCallback.value = callback
                     permissionsLauncher.launch(
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
@@ -142,12 +131,10 @@ class Permissions {
 
         private fun hasForegroundServicePermissions(context: Context): Boolean {
             if (ContextCompat.checkSelfPermission(context, FOREGROUND_SERVICE) != PERMISSION_GRANTED) {
-                Log.d(this::class.simpleName, "missing FOREGROUND_SERVICE")
                 return false
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                 if (ContextCompat.checkSelfPermission(context, FOREGROUND_SERVICE_SPECIAL_USE) != PERMISSION_GRANTED) {
-                    Log.d(this::class.simpleName, "missing FOREGROUND_SERVICE_SPECIAL_USE")
                     return false
                 }
             }

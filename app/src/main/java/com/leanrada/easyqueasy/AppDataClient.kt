@@ -22,7 +22,7 @@ import java.io.InputStream
 import java.io.OutputStream
 
 class AppDataClient(context: Context, scope: CoroutineScope) {
-    private val dataStore: DataStore<AppData> = MultiProcessDataStoreFactory.create(
+    val dataStore: DataStore<AppData> = MultiProcessDataStoreFactory.create(
         serializer = AppDataSerializer(),
         produceFile = {
             File("${context.cacheDir.path}/app_data.pb")
@@ -117,7 +117,7 @@ private fun <T> rememberAppData(
                             builder.build()
                         }
                     } catch (e: Exception) {
-                        Log.e(this::class.simpleName, "Update data failed!", e)
+                        Log.e(AppDataClient::class.simpleName, "Update data failed!", e)
                     }
                 }
             }

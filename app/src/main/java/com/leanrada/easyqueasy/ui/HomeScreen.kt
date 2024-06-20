@@ -2,6 +2,7 @@ package com.leanrada.easyqueasy.ui
 
 import AppDataOuterClass.DrawingMode
 import android.widget.Toast
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
@@ -13,9 +14,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
@@ -29,6 +30,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -36,6 +38,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -47,8 +50,8 @@ import com.leanrada.easyqueasy.Permissions
 @Composable
 fun HomeScreen(
     appData: AppDataClient,
-    onToggleOverlay: () -> Unit = {},
-    tmp_onReset: () -> Unit = {}
+    foregroundOverlayActive: MutableState<Boolean>,
+    debug_onReset: () -> Unit = {}
 ) {
     val permissionChecker by Permissions.rememberPermissionChecker(appData)
     val loaded by appData.rememberLoaded()
@@ -57,11 +60,11 @@ fun HomeScreen(
 
     Scaffold(
         topBar = {
-            TopBar()
+            TopBar(onLongPressIcon = debug_onReset)
         },
         floatingActionButton = {
             if (drawingMode == DrawingMode.DRAW_OVER_OTHER_APPS && permissionChecker.status == PermissionChecker.Status.OK) {
-                ToggleButton(onToggleOverlay)
+                ToggleButton(foregroundOverlayActive)
             }
         },
         modifier = Modifier.fillMaxSize(),
@@ -75,7 +78,6 @@ fun HomeScreen(
         ) {
             GetStartedSection(permissionChecker)
             SettingsSection(appData, setPreviewMode)
-            Button(onClick = tmp_onReset) {}
         }
     }
 
@@ -89,11 +91,19 @@ fun HomeScreen(
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
-private fun TopBar() {
+private fun TopBar(onLongPressIcon: () -> Unit = {}) {
     TopAppBar(
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Filled.Face, "")
+                Icon(
+                    imageVector = Icons.Filled.Face,
+                    contentDescription = "",
+                    modifier = Modifier.pointerInput(onLongPressIcon) {
+                        detectTapGestures(
+                            onLongPress = { onLongPressIcon() }
+                        )
+                    },
+                )
                 Spacer(Modifier.size(8.dp))
                 Text(
                     "Easy Queasy",
@@ -105,9 +115,16 @@ private fun TopBar() {
 }
 
 @Composable
-fun ToggleButton(onClick: () -> Unit = {}) {
-    FloatingActionButton(onClick = { onClick() }) {
-        Icon(Icons.Filled.PlayArrow, "Start")
+fun ToggleButton(overlayActive: MutableState<Boolean>) {
+    FloatingActionButton(onClick = { overlayActive.value = !overlayActive.value }) {
+        Icon(
+            imageVector =
+            if (overlayActive.value)
+                Icons.Filled.Close
+            else
+                Icons.Filled.PlayArrow,
+            contentDescription = "Start"
+        )
     }
 }
 
