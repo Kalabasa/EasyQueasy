@@ -45,12 +45,14 @@ class MainActivity : ComponentActivity() {
         val ensureForegroundOverlayPermissions = foregroundOverlayPermissionsEnsurer()
         val foregroundOverlayActive = remember { mutableStateOf(false) }
 
-        LaunchedEffect(foregroundOverlayActive.value) {
-            if (foregroundOverlayActive.value) {
+        val shouldActivateForegroundOverlay = drawingMode == DrawingMode.DRAW_OVER_OTHER_APPS && foregroundOverlayActive.value
+        LaunchedEffect(shouldActivateForegroundOverlay) {
+            if (shouldActivateForegroundOverlay) {
                 ensureForegroundOverlayPermissions {
                     startOverlayService(context)
                 }
             } else {
+                foregroundOverlayActive.value = false
                 stopOverlayService(context)
             }
         }

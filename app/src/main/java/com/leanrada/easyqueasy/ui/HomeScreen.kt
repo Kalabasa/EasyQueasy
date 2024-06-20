@@ -38,6 +38,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.buildAnnotatedString
@@ -46,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import com.leanrada.easyqueasy.AppDataClient
 import com.leanrada.easyqueasy.PermissionChecker
 import com.leanrada.easyqueasy.Permissions
+import com.leanrada.easyqueasy.ui.theme.disabledAlpha
 
 @Composable
 fun HomeScreen(
@@ -241,13 +243,13 @@ private fun SettingsSection(appData: AppDataClient, setPreviewMode: (value: Prev
         )
         Surface(
             onClick = { Toast.makeText(context, "Color schemes not implemented yet!", Toast.LENGTH_SHORT).show() },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth().alpha(disabledAlpha),
         ) {
             Column(Modifier.padding(horizontal = 24.dp, vertical = 8.dp)) {
                 Text(
                     "Color scheme",
                     style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
                 )
                 Text(
                     "Black and white",
