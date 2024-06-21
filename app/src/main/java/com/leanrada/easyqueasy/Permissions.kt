@@ -3,6 +3,7 @@ package com.leanrada.easyqueasy
 import AppDataOuterClass.DrawingMode
 import android.Manifest.permission.FOREGROUND_SERVICE
 import android.Manifest.permission.FOREGROUND_SERVICE_SPECIAL_USE
+import android.Manifest.permission.HIGH_SAMPLING_RATE_SENSORS
 import android.Manifest.permission.SYSTEM_ALERT_WINDOW
 import android.content.Context
 import android.content.Intent
@@ -10,6 +11,7 @@ import android.content.pm.PackageManager.PERMISSION_GRANTED
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
@@ -41,6 +43,20 @@ class PermissionChecker(
 
 class Permissions {
     companion object {
+        private val commonPermissions = arrayOf(HIGH_SAMPLING_RATE_SENSORS)
+
+        val accessibilityServicePermissions = commonPermissions
+        val foregroundServicePermissions =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                arrayOf(*commonPermissions, FOREGROUND_SERVICE, FOREGROUND_SERVICE_SPECIAL_USE)
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                arrayOf(*commonPermissions, FOREGROUND_SERVICE)
+            } else if (Build.VERSION.SDK_INT >= 23) {
+                arrayOf(*commonPermissions)
+            } else {
+                arrayOf(*commonPermissions, SYSTEM_ALERT_WINDOW)
+            }
+
         @Composable
         fun rememberPermissionChecker(appData: AppDataClient): State<PermissionChecker> {
             val context = LocalContext.current
@@ -113,46 +129,38 @@ class Permissions {
         }
 
         @Composable
-        fun foregroundOverlayPermissionsEnsurer(): (callback: () -> Unit) -> Unit {
+        fun permissionsEnsurer(permissions: Array<String>): (callback: () -> Unit) -> Unit {
             val context = LocalContext.current
 
             val savedCallback: MutableState<(() -> Unit)?> = remember { mutableStateOf(null) }
 
             val permissionsLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
-                if (hasForegroundServicePermissions(context)) {
+                if (checkPermissions(context, permissions)) {
                     savedCallback.value?.invoke()
                     savedCallback.value = null
+                } else {
+                    Log.w(
+                        Permissions::class.simpleName,
+                        "Permissions not accepted: " + findUngrantedPermissions(context, permissions).joinToString())
                 }
             }
 
             return { callback ->
-                if (hasForegroundServicePermissions(context)) {
+                if (checkPermissions(context, permissions)) {
                     callback()
                 } else {
                     savedCallback.value = callback
-                    permissionsLauncher.launch(
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                            arrayOf(SYSTEM_ALERT_WINDOW, FOREGROUND_SERVICE, FOREGROUND_SERVICE_SPECIAL_USE)
-                        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                            arrayOf(SYSTEM_ALERT_WINDOW, FOREGROUND_SERVICE)
-                        } else {
-                            arrayOf(SYSTEM_ALERT_WINDOW)
-                        }
-                    )
+                    permissionsLauncher.launch(permissions)
                 }
             }
         }
 
-        private fun hasForegroundServicePermissions(context: Context): Boolean {
-            if (ContextCompat.checkSelfPermission(context, FOREGROUND_SERVICE) != PERMISSION_GRANTED) {
-                return false
-            }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                if (ContextCompat.checkSelfPermission(context, FOREGROUND_SERVICE_SPECIAL_USE) != PERMISSION_GRANTED) {
-                    return false
-                }
-            }
-            return true
+        private fun checkPermissions(context: Context, permissions: Array<String>): Boolean {
+            return permissions.all { ContextCompat.checkSelfPermission(context, it) == PERMISSION_GRANTED }
+        }
+
+        private fun findUngrantedPermissions(context: Context, permissions: Array<String>): Collection<String> {
+            return permissions.filter { ContextCompat.checkSelfPermission(context, it) != PERMISSION_GRANTED }
         }
     }
 }

@@ -2,10 +2,8 @@ package com.leanrada.easyqueasy.services
 
 import android.accessibilityservice.AccessibilityService
 import android.content.Intent
-import android.graphics.PixelFormat
 import android.util.Log
 import android.view.View
-import android.view.ViewGroup
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
 import androidx.compose.runtime.LaunchedEffect
@@ -62,20 +60,8 @@ class AccessibilityOverlayService : AccessibilityService(), SavedStateRegistryOw
     override fun onServiceConnected() {
         Log.i(AccessibilityOverlayService::class.simpleName, "Accessibility overlay service connected")
 
-        val windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
-
-        val layoutParams = WindowManager.LayoutParams()
-        layoutParams.apply {
-            width = ViewGroup.LayoutParams.MATCH_PARENT
-            height = ViewGroup.LayoutParams.MATCH_PARENT
-            type = WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY
-            format = PixelFormat.TRANSPARENT
-            flags =
-                WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
-        }
-
         try {
-            windowManager.addView(contentView, layoutParams)
+            addOverlayView(this, contentView, WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY)
         } catch (e: Exception) {
             Log.e(AccessibilityOverlayService::class.simpleName, "Adding overlay root view failed!", e)
         }

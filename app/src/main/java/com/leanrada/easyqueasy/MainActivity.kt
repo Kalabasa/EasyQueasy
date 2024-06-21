@@ -19,7 +19,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
-import com.leanrada.easyqueasy.Permissions.Companion.foregroundOverlayPermissionsEnsurer
+import com.leanrada.easyqueasy.Permissions.Companion.foregroundServicePermissions
+import com.leanrada.easyqueasy.Permissions.Companion.permissionsEnsurer
 import com.leanrada.easyqueasy.services.ForegroundOverlayService
 import com.leanrada.easyqueasy.ui.HomeScreen
 import com.leanrada.easyqueasy.ui.ModeSelectScreen
@@ -42,7 +43,7 @@ class MainActivity : ComponentActivity() {
         val coroutineScope = rememberCoroutineScope()
         var drawingMode by appData.rememberDrawingMode()
         var onboarded by appData.rememberOnboarded()
-        val ensureForegroundOverlayPermissions = foregroundOverlayPermissionsEnsurer()
+        val ensureForegroundOverlayPermissions = permissionsEnsurer(foregroundServicePermissions)
         val foregroundOverlayActive = remember { mutableStateOf(false) }
 
         val shouldActivateForegroundOverlay = drawingMode == DrawingMode.DRAW_OVER_OTHER_APPS && foregroundOverlayActive.value

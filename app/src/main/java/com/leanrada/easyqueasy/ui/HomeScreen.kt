@@ -359,7 +359,7 @@ private fun SettingsSection(appData: AppDataClient, enabled: Boolean = false, se
         ) {
             Column(Modifier.padding(horizontal = 24.dp, vertical = 8.dp)) {
                 Text(
-                    "Change mode",
+                    "Mode",
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold
                 )

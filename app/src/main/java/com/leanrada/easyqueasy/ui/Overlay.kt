@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
@@ -58,7 +59,7 @@ fun Overlay(
 
     val overlayAreaSize by appData.rememberOverlayAreaSize()
     val overlaySpeed by appData.rememberOverlaySpeed()
-    val speedFactor by remember { derivedStateOf { lerp(0.4f, 3f, overlaySpeed) } }
+    val speedFactor by remember { derivedStateOf { lerp(0.6f, 2.7f, overlaySpeed) } }
 
     val startTimeMillis by remember {
         object : State<Long> {
@@ -69,6 +70,7 @@ fun Overlay(
     var timer by remember { mutableIntStateOf(0) }
 
     val position = remember { mutableStateListOf(0f, 0f, 0f) }
+    val lastPosition = remember { mutableStateListOf(0f, 0f, 0f) }
     var effectIntensity by remember { mutableFloatStateOf(0f) }
 
     val sensorManager = ContextCompat.getSystemService(LocalContext.current, SensorManager::class.java)
@@ -85,20 +87,48 @@ fun Overlay(
         } else {
             accelerationListener = object : SensorEventListener {
                 var lastEventTimeNanos = 0L
-                val velocity = floatArrayOf(0f, 0f, 0f)
+                var lowPass: Array<Float>? = null
+                var lowerPass: Array<Float>? = null
+                var velocity = arrayOf(0f, 0f, 0f)
 
                 override fun onSensorChanged(event: SensorEvent?) {
                     if (event == null) return
                     if (lastEventTimeNanos > 0) {
                         val dt = (event.timestamp - lastEventTimeNanos) * 1e-9f
 
-                        val isPortrait = configuration.orientation == Configuration.ORIENTATION_PORTRAIT
-                        val accelerationX = event.values[if (isPortrait) 0 else 1]
-                        val accelerationY = event.values[if (isPortrait) 1 else 0]
+                        var lowPass1 = lowPass
+                        var lowerPass1 = lowerPass
+                        if (lowPass1 != null && lowerPass1 != null) {
+                            val tf = 1f - 0.01f.pow(dt)
+                            lowPass1[0] += (event.values[0] - lowPass1[0]) * tf
+                            lowPass1[1] += (event.values[1] - lowPass1[1]) * tf
+                            lowPass1[2] += (event.values[2] - lowPass1[2]) * tf
+                            val tf2 = 1f - 0.02f.pow(dt)
+                            lowerPass1[0] += (event.values[0] - lowerPass1[0]) * tf2
+                            lowerPass1[1] += (event.values[1] - lowerPass1[1]) * tf2
+                            lowerPass1[2] += (event.values[2] - lowerPass1[2]) * tf2
+                        } else {
+                            lowPass1 = event.values.toTypedArray().clone()
+                            lowerPass1 = event.values.toTypedArray().clone()
+                            lowPass = lowPass1
+                            lowerPass = lowerPass1
+                        }
 
-                        velocity[0] -= accelerationCurve(accelerationX * dt)
-                        velocity[1] += accelerationCurve(accelerationY * dt)
-                        velocity[2] -= accelerationCurve(event.values[2] * dt)
+                        val isPortrait = configuration.orientation == Configuration.ORIENTATION_PORTRAIT
+                        val indexX = if (isPortrait) 0 else 1
+                        val indexY = if (isPortrait) 1 else 0
+
+                        val accelerationX = (event.values[indexX] - lowerPass1[indexX]) + (event.values[indexX] - lowPass1[indexX]) * 0.1f
+                        val accelerationY = (event.values[indexY] - lowerPass1[indexY]) + (event.values[indexY] - lowPass1[indexY]) * 0.1f
+                        val accelerationZ = (event.values[2] - lowerPass1[2]) + (event.values[2] - lowPass1[2]) * 0.1f
+
+                        velocity[0] -= accelerationX * dt
+                        velocity[1] += accelerationY * dt
+                        velocity[2] -= accelerationZ * dt
+
+                        lastPosition[0] = position[0]
+                        lastPosition[1] = position[1]
+                        lastPosition[2] = position[2]
 
                         position[0] += velocity[0] * dt
                         position[1] += velocity[1] * dt
@@ -113,7 +143,7 @@ fun Overlay(
                         velocity[2] *= friction
 
                         effectIntensity *= (1f - 0.2f.pow(72f * dt))
-                        effectIntensity = lerp(effectIntensity, 1f, 1f - (1f - sigmoid01((speed2D - 0.11f) * 60f)).pow(72f * dt))
+                        effectIntensity = lerp(effectIntensity, 1f, 1f - (1f - sigmoid01((speed2D - 0.09f) * 60f)).pow(72f * dt))
                         currentTimeMillis = System.currentTimeMillis()
                     }
                     lastEventTimeNanos = event.timestamp
@@ -165,39 +195,58 @@ fun Overlay(
                 PreviewMode.SPEED -> Pair(position[0], 0f)
             }
 
+            val (trailXPx, trailYPx) = when (previewMode) {
+                PreviewMode.NONE -> Pair(
+                    (position[0] - lastPosition[0]) * oneMeter.toPx(),
+                    (position[1] - lastPosition[1]) * oneMeter.toPx(),
+                )
+
+                else -> Pair(0f, 0f)
+            }
+
             val gridSizeX = 60f.dp.toPx()
             val gridSizeY = gridSizeX / hexRatio
             for (x in -2 until (size.width / gridSizeX + 2).toInt()) {
                 for (y in -2 until (size.height / gridSizeY + 2).toInt()) {
                     val pixelX = (x + 0.5f + (y % 2) * 0.5f) * gridSizeX + offsetXPx % gridSizeX
                     val pixelY = (y + 0.5f) * gridSizeY + offsetYPx % (gridSizeY * 2)
-                    drawCircle(
-                        color = Color.Black,
-                        radius = dotRadius(
-                            baseDotRadius,
-                            pixelX,
-                            pixelY,
-                            size,
-                            scaledPeripherySizePx,
-                            startupEffectActive,
-                            startupEffectProgress
-                        ),
-                        center = Offset(pixelX, pixelY)
+                    val strokeWidth = 2f * dotRadius(
+                        baseDotRadius,
+                        pixelX,
+                        pixelY,
+                        size,
+                        scaledPeripherySizePx,
+                        startupEffectActive,
+                        startupEffectProgress
                     )
+                    if (strokeWidth > 0f) {
+                        drawLine(
+                            color = Color.Black,
+                            cap = StrokeCap.Round,
+                            start = Offset(pixelX, pixelY),
+                            end = Offset(pixelX + trailXPx, pixelY + trailYPx),
+                            strokeWidth = strokeWidth
+                        )
+                    }
                     val whitePixelY = pixelY + gridSizeY * 0.6667f
-                    drawCircle(
-                        color = Color.White,
-                        radius = -1f + dotRadius(
-                            baseDotRadius,
-                            pixelX,
-                            whitePixelY,
-                            size,
-                            scaledPeripherySizePx,
-                            startupEffectActive,
-                            startupEffectProgress
-                        ),
-                        center = Offset(pixelX, whitePixelY)
+                    val whiteStrokeWidth = -1f + 2f * dotRadius(
+                        baseDotRadius,
+                        pixelX,
+                        whitePixelY,
+                        size,
+                        scaledPeripherySizePx,
+                        startupEffectActive,
+                        startupEffectProgress
                     )
+                    if (whiteStrokeWidth > 0f) {
+                        drawLine(
+                            color = Color.White,
+                            cap = StrokeCap.Round,
+                            start = Offset(pixelX, whitePixelY),
+                            end = Offset(pixelX + trailXPx, whitePixelY + trailYPx),
+                            strokeWidth = whiteStrokeWidth,
+                        )
+                    }
                 }
             }
         }

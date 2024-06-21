@@ -7,12 +7,10 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
-import android.graphics.PixelFormat
 import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import android.view.View
-import android.view.ViewGroup
 import android.view.WindowManager
 import androidx.compose.ui.platform.ComposeView
 import androidx.core.app.NotificationCompat
@@ -65,20 +63,8 @@ class ForegroundOverlayService : Service(), SavedStateRegistryOwner {
 
         startNotificationService()
 
-        val windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
-
-        val layoutParams = WindowManager.LayoutParams()
-        layoutParams.apply {
-            width = ViewGroup.LayoutParams.MATCH_PARENT
-            height = ViewGroup.LayoutParams.MATCH_PARENT
-            type = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-            format = PixelFormat.TRANSPARENT
-            flags =
-                WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
-        }
-
         try {
-            windowManager.addView(contentView, layoutParams)
+            addOverlayView(this, contentView, WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY)
         } catch (e: Exception) {
             Log.e(ForegroundOverlayService::class.simpleName, "Adding overlay root view failed!", e)
         }
@@ -141,3 +127,4 @@ class ForegroundOverlayService : Service(), SavedStateRegistryOwner {
     override val savedStateRegistry: SavedStateRegistry
         get() = savedStateRegistryController.savedStateRegistry
 }
+
