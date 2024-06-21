@@ -4,6 +4,7 @@ message AppData {
   optional bool onboarded = 1;
   optional bool onboardedAccessibilitySettings = 2;
   optional DrawingMode drawingMode = 3;
+  optional OverlayColor overlayColor = 6;
   optional float overlayAreaSize = 4;
   optional float overlaySpeed = 5;
 }
@@ -12,4 +13,10 @@ enum DrawingMode {
   NONE = 0;
   DRAW_OVER_OTHER_APPS = 1;
   ACCESSIBILITY_SERVICE = 2;
+}
+
+enum OverlayColor {
+  BLACK_AND_WHITE = 0;
+  BLACK = 1;
+  WHITE = 2;
 }

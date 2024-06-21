@@ -1,5 +1,6 @@
 package com.leanrada.easyqueasy.ui
 
+import AppDataOuterClass.OverlayColor
 import android.content.res.Configuration
 import android.hardware.Sensor
 import android.hardware.SensorEvent
@@ -61,6 +62,7 @@ fun Overlay(
     val configuration = LocalConfiguration.current
     val isPreview = previewMode != PreviewMode.NONE
 
+    val overlayColor by appData.rememberOverlayColor()
     val overlayAreaSize by appData.rememberOverlayAreaSize()
     val overlaySpeed by appData.rememberOverlaySpeed()
     val speedFactor by remember { derivedStateOf { lerp(0.6f, 2.7f, overlaySpeed) } }
@@ -148,7 +150,6 @@ fun Overlay(
 
                         effectIntensity *= (1f - 0.2f.pow(72f * dt))
                         effectIntensity = lerp(effectIntensity, 1f, 1f - (1f - sigmoid01((speed2D - 0.09f) * 60f)).pow(72f * dt))
-                        effectIntensity = 1f
                         currentTimeMillis = System.currentTimeMillis()
                     }
                     lastEventTimeNanos = event.timestamp
@@ -216,42 +217,46 @@ fun Overlay(
             val gridSizeZ = gridSizeX * 3f
 
             for (x in -2 until (size.width / gridSizeX + 2).toInt()) {
-                for (y in -2 until (size.height / gridSizeY + 2).toInt()) {
+                for (y in -4 until (size.height / gridSizeY + 2).toInt()) {
                     for (z in -1 until (screenDepth.toPx() / gridSizeZ + 2).toInt()) {
                         val pixelX = (x + 0.5f + (y % 2) * 0.5f) * gridSizeX + offsetXPx % gridSizeX
                         val pixelY = (y + 0.5f + (z % 2) * 1.3333f) * gridSizeY + offsetYPx % (gridSizeY * 2)
                         val pixelZ = z * gridSizeZ + offsetZPx % (gridSizeZ * 2)
                         val pixelTrailX = pixelX + trailDxPx
-                        val pixelTrailY = pixelY + trailDyPx
                         val pixelTrailZ = pixelZ + trailDzPx
-                        drawParticle(
-                            pixelX,
-                            pixelY,
-                            pixelZ,
-                            pixelTrailX,
-                            pixelTrailY,
-                            pixelTrailZ,
-                            Color.Black,
-                            baseDotRadius,
-                            scaledPeripherySizePx,
-                            startupEffectActive,
-                            startupEffectProgress,
-                        )
-                        val whitePixelY = pixelY + gridSizeY * 0.6667f
-                        val whitePixelTrailY = whitePixelY + trailDyPx
-                        drawParticle(
-                            pixelX,
-                            whitePixelY,
-                            pixelZ,
-                            pixelTrailX,
-                            whitePixelTrailY,
-                            pixelTrailZ,
-                            Color.White,
-                            baseDotRadius - 1f,
-                            scaledPeripherySizePx,
-                            startupEffectActive,
-                            startupEffectProgress,
-                        )
+                        if (overlayColor == OverlayColor.BLACK_AND_WHITE || overlayColor == OverlayColor.BLACK) {
+                            val pixelTrailY = pixelY + trailDyPx
+                            drawParticle(
+                                pixelX,
+                                pixelY,
+                                pixelZ,
+                                pixelTrailX,
+                                pixelTrailY,
+                                pixelTrailZ,
+                                Color.Black,
+                                baseDotRadius,
+                                scaledPeripherySizePx,
+                                startupEffectActive,
+                                startupEffectProgress,
+                            )
+                        }
+                        if (overlayColor == OverlayColor.BLACK_AND_WHITE || overlayColor == OverlayColor.WHITE) {
+                            val whitePixelY = pixelY + gridSizeY * 0.6667f
+                            val whitePixelTrailY = whitePixelY + trailDyPx
+                            drawParticle(
+                                pixelX,
+                                whitePixelY,
+                                pixelZ,
+                                pixelTrailX,
+                                whitePixelTrailY,
+                                pixelTrailZ,
+                                Color.White,
+                                baseDotRadius - 1f,
+                                scaledPeripherySizePx,
+                                startupEffectActive,
+                                startupEffectProgress,
+                            )
+                        }
                     }
                 }
             }

@@ -2,6 +2,7 @@ package com.leanrada.easyqueasy
 
 import AppDataOuterClass.AppData
 import AppDataOuterClass.DrawingMode
+import AppDataOuterClass.OverlayColor
 import android.content.Context
 import android.util.Log
 import androidx.compose.runtime.Composable
@@ -55,6 +56,14 @@ class AppDataClient(context: Context, scope: CoroutineScope) {
         { data -> data.hasDrawingMode() },
         { data -> data.drawingMode },
         { data, value -> data.drawingMode = value },
+    )
+
+    @Composable
+    fun rememberOverlayColor(): MutableState<OverlayColor> = rememberAppData(
+        dataStore,
+        { data -> data.hasOverlayColor() },
+        { data -> data.overlayColor },
+        { data, value -> data.overlayColor = value },
     )
 
     @Composable

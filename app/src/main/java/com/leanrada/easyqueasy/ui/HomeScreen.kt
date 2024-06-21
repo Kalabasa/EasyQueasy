@@ -1,9 +1,10 @@
 package com.leanrada.easyqueasy.ui
 
 import AppDataOuterClass.DrawingMode
+import AppDataOuterClass.OverlayColor
 import android.content.Intent
 import android.provider.Settings
-import android.widget.Toast
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -48,6 +49,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import androidx.core.content.ContextCompat
 import com.leanrada.easyqueasy.AppDataClient
 import com.leanrada.easyqueasy.PermissionChecker
@@ -275,6 +277,8 @@ private fun SettingsSection(appData: AppDataClient, enabled: Boolean = false, se
     val drawingMode by appData.rememberDrawingMode()
     val alphaForEnabled = if (enabled) 1f else disabledAlpha
 
+    var overlayColor by appData.rememberOverlayColor()
+
     val (overlayAreaSize, setOverlayAreaSize) = appData.rememberOverlayAreaSize()
     val overlayAreaSizeSliderState = rememberSliderState(overlayAreaSize, setOverlayAreaSize)
 
@@ -289,12 +293,15 @@ private fun SettingsSection(appData: AppDataClient, enabled: Boolean = false, se
                 .padding(horizontal = 24.dp, vertical = 8.dp)
                 .alpha(alphaForEnabled)
         )
+
+        var colorSchemeDialogActive by remember { mutableStateOf(false) }
+
         Surface(
-            onClick = { Toast.makeText(context, "Color schemes not implemented yet!", Toast.LENGTH_SHORT).show() },
+            onClick = { colorSchemeDialogActive = true },
             enabled = enabled,
             modifier = Modifier
                 .fillMaxWidth()
-                .alpha(disabledAlpha),
+                .alpha(alphaForEnabled),
         ) {
             Column(Modifier.padding(horizontal = 24.dp, vertical = 8.dp)) {
                 Text(
@@ -303,11 +310,32 @@ private fun SettingsSection(appData: AppDataClient, enabled: Boolean = false, se
                     fontWeight = FontWeight.Bold,
                 )
                 Text(
-                    "Black and white",
+                    overlayColorLabel(overlayColor),
                     style = MaterialTheme.typography.bodyMedium,
                 )
             }
         }
+
+        if (colorSchemeDialogActive) {
+            Dialog(onDismissRequest = { colorSchemeDialogActive = false }) {
+                Card(colors = CardDefaults.elevatedCardColors()) {
+                    OverlayColor.values().forEach {
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    overlayColor = it
+                                    colorSchemeDialogActive = false
+                                }
+                                .padding(16.dp)
+                        ) {
+                            Text(overlayColorLabel(it), style = MaterialTheme.typography.labelLarge)
+                        }
+                    }
+                }
+            }
+        }
+
         Column(
             Modifier
                 .padding(horizontal = 24.dp, vertical = 8.dp)
@@ -329,6 +357,7 @@ private fun SettingsSection(appData: AppDataClient, enabled: Boolean = false, se
                 valueRange = 0f..1f,
             )
         }
+
         Column(
             Modifier
                 .padding(horizontal = 24.dp, vertical = 8.dp)
@@ -380,6 +409,12 @@ private fun SettingsSection(appData: AppDataClient, enabled: Boolean = false, se
             }
         }
     }
+}
+
+private fun overlayColorLabel(overlayColor: OverlayColor) = when (overlayColor) {
+    OverlayColor.BLACK_AND_WHITE -> "Black and white"
+    OverlayColor.BLACK -> "Black"
+    OverlayColor.WHITE -> "White"
 }
 
 data class SliderState(
