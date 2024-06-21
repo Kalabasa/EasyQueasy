@@ -23,12 +23,14 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
-import androidx.core.math.MathUtils
+import androidx.core.math.MathUtils.clamp
 import com.leanrada.easyqueasy.AppDataClient
 import kotlin.math.abs
 import kotlin.math.hypot
@@ -40,6 +42,8 @@ import kotlin.math.sqrt
 const val floatE = Math.E.toFloat()
 val hexRatio = 2f * sqrt(3f) / 3f
 val oneMeter = 1587f.dp
+val eyeZ = oneMeter.times(0.6f)
+val screenDepth = oneMeter.times(0.2f)
 const val startEffectDurationMillis = 700L
 
 enum class PreviewMode {
@@ -124,7 +128,7 @@ fun Overlay(
 
                         velocity[0] -= accelerationX * dt
                         velocity[1] += accelerationY * dt
-                        velocity[2] -= accelerationZ * dt
+                        velocity[2] += accelerationZ * dt
 
                         lastPosition[0] = position[0]
                         lastPosition[1] = position[1]
@@ -144,6 +148,7 @@ fun Overlay(
 
                         effectIntensity *= (1f - 0.2f.pow(72f * dt))
                         effectIntensity = lerp(effectIntensity, 1f, 1f - (1f - sigmoid01((speed2D - 0.09f) * 60f)).pow(72f * dt))
+                        effectIntensity = 1f
                         currentTimeMillis = System.currentTimeMillis()
                     }
                     lastEventTimeNanos = event.timestamp
@@ -185,66 +190,67 @@ fun Overlay(
                         lerp(0.4f, 1f, finalEffectIntensity).pow(2f)
             }
 
-            val (offsetXPx, offsetYPx) = when (previewMode) {
-                PreviewMode.NONE -> Pair(
+            val (offsetXPx, offsetYPx, offsetZPx) = when (previewMode) {
+                PreviewMode.NONE -> Triple(
                     position[0] * oneMeter.toPx() * speedFactor,
-                    position[1] * oneMeter.toPx() * speedFactor
+                    position[1] * oneMeter.toPx() * speedFactor,
+                    position[2] * oneMeter.toPx() * speedFactor,
                 )
 
-                PreviewMode.SIZE -> Pair(0f, 0f)
-                PreviewMode.SPEED -> Pair(position[0], 0f)
+                PreviewMode.SIZE -> Triple(0f, 0f, 0f)
+                PreviewMode.SPEED -> Triple(position[0], 0f, 0f)
             }
 
-            val (trailXPx, trailYPx) = when (previewMode) {
-                PreviewMode.NONE -> Pair(
+            val (trailDxPx, trailDyPx, trailDzPx) = when (previewMode) {
+                PreviewMode.NONE -> Triple(
                     (position[0] - lastPosition[0]) * oneMeter.toPx(),
                     (position[1] - lastPosition[1]) * oneMeter.toPx(),
+                    (position[2] - lastPosition[2]) * oneMeter.toPx(),
                 )
 
-                else -> Pair(0f, 0f)
+                else -> Triple(0f, 0f, 0f)
             }
 
             val gridSizeX = 60f.dp.toPx()
             val gridSizeY = gridSizeX / hexRatio
+            val gridSizeZ = gridSizeX * 3f
+
             for (x in -2 until (size.width / gridSizeX + 2).toInt()) {
                 for (y in -2 until (size.height / gridSizeY + 2).toInt()) {
-                    val pixelX = (x + 0.5f + (y % 2) * 0.5f) * gridSizeX + offsetXPx % gridSizeX
-                    val pixelY = (y + 0.5f) * gridSizeY + offsetYPx % (gridSizeY * 2)
-                    val strokeWidth = 2f * dotRadius(
-                        baseDotRadius,
-                        pixelX,
-                        pixelY,
-                        size,
-                        scaledPeripherySizePx,
-                        startupEffectActive,
-                        startupEffectProgress
-                    )
-                    if (strokeWidth > 0f) {
-                        drawLine(
-                            color = Color.Black,
-                            cap = StrokeCap.Round,
-                            start = Offset(pixelX, pixelY),
-                            end = Offset(pixelX + trailXPx, pixelY + trailYPx),
-                            strokeWidth = strokeWidth
+                    for (z in -1 until (screenDepth.toPx() / gridSizeZ + 2).toInt()) {
+                        val pixelX = (x + 0.5f + (y % 2) * 0.5f) * gridSizeX + offsetXPx % gridSizeX
+                        val pixelY = (y + 0.5f + (z % 2) * 1.3333f) * gridSizeY + offsetYPx % (gridSizeY * 2)
+                        val pixelZ = z * gridSizeZ + offsetZPx % (gridSizeZ * 2)
+                        val pixelTrailX = pixelX + trailDxPx
+                        val pixelTrailY = pixelY + trailDyPx
+                        val pixelTrailZ = pixelZ + trailDzPx
+                        drawParticle(
+                            pixelX,
+                            pixelY,
+                            pixelZ,
+                            pixelTrailX,
+                            pixelTrailY,
+                            pixelTrailZ,
+                            Color.Black,
+                            baseDotRadius,
+                            scaledPeripherySizePx,
+                            startupEffectActive,
+                            startupEffectProgress,
                         )
-                    }
-                    val whitePixelY = pixelY + gridSizeY * 0.6667f
-                    val whiteStrokeWidth = -1f + 2f * dotRadius(
-                        baseDotRadius,
-                        pixelX,
-                        whitePixelY,
-                        size,
-                        scaledPeripherySizePx,
-                        startupEffectActive,
-                        startupEffectProgress
-                    )
-                    if (whiteStrokeWidth > 0f) {
-                        drawLine(
-                            color = Color.White,
-                            cap = StrokeCap.Round,
-                            start = Offset(pixelX, whitePixelY),
-                            end = Offset(pixelX + trailXPx, whitePixelY + trailYPx),
-                            strokeWidth = whiteStrokeWidth,
+                        val whitePixelY = pixelY + gridSizeY * 0.6667f
+                        val whitePixelTrailY = whitePixelY + trailDyPx
+                        drawParticle(
+                            pixelX,
+                            whitePixelY,
+                            pixelZ,
+                            pixelTrailX,
+                            whitePixelTrailY,
+                            pixelTrailZ,
+                            Color.White,
+                            baseDotRadius - 1f,
+                            scaledPeripherySizePx,
+                            startupEffectActive,
+                            startupEffectProgress,
                         )
                     }
                 }
@@ -253,20 +259,78 @@ fun Overlay(
     }
 }
 
-private fun dotRadius(
+private fun DrawScope.drawParticle(
+    pixelX: Float,
+    pixelY: Float,
+    pixelZ: Float,
+    pixelTrailX: Float,
+    pixelTrailY: Float,
+    pixelTrailZ: Float,
+    color: Color,
     baseDotRadius: Float,
+    scaledPeripherySizePx: Float,
+    startupEffectActive: Boolean,
+    startupEffectProgress: Float,
+) {
+    val eyeZPx = eyeZ.toPx()
+    val screenDepthPx = screenDepth.toPx()
+    val strokeWidth = 2f * dotRadius(
+        pixelX,
+        pixelY,
+        pixelZ,
+        baseDotRadius,
+        size,
+        screenDepthPx,
+        scaledPeripherySizePx,
+        startupEffectActive,
+        startupEffectProgress
+    )
+    if (strokeWidth > 0f) {
+        drawLine(
+            color = color,
+            alpha = 1f - min(abs((pixelZ - screenDepthPx * 0.5f) / (screenDepthPx * 0.5f)), 1f).pow(2),
+            cap = StrokeCap.Round,
+            start = perspective(pixelX, pixelY, pixelZ, size),
+            end = perspective(pixelTrailX, pixelTrailY, pixelTrailZ, size),
+            strokeWidth = strokeWidth * (eyeZPx / (pixelZ + eyeZPx))
+        )
+    }
+}
+
+private fun Density.perspective(x: Float, y: Float, z: Float, screenSize: Size): Offset {
+    val eyeZPx = eyeZ.toPx()
+    return Offset(
+        screenSize.width * 0.5f + (x - screenSize.width * 0.5f) * (eyeZPx / (z + eyeZPx)),
+        screenSize.height * 0.5f + (y - screenSize.height * 0.5f) * (eyeZPx / (z + eyeZPx)),
+    )
+}
+
+private fun dotRadius(
     x: Float,
     y: Float,
+    z: Float,
+    baseDotRadius: Float,
     screenSize: Size,
+    screenDepthPx: Float,
     scaledPeripherySizePx: Float,
     startupEffectActive: Boolean,
     startupEffectProgress: Float
-) = (max(0f, baseDotRadius * dotRadiusFactor(edgeDistance(x, y, screenSize), scaledPeripherySizePx))
-        + startUpEffectRadius(startupEffectActive, startupEffectProgress, y, screenSize))
+) = (
+        max(
+            0f,
+            baseDotRadius * dotRadiusFactor(x, y, z, screenSize, screenDepthPx, scaledPeripherySizePx)
+        ) + startUpEffectRadius(startupEffectActive, startupEffectProgress, y, screenSize))
 
-private fun edgeDistance(x: Float, y: Float, screenSize: Size) = min(min(x, y), min(screenSize.width - x, screenSize.height - y))
-private fun dotRadiusFactor(edgeDistance: Float, peripherySize: Float) =
-    sqrt(MathUtils.clamp(1.5f * (peripherySize - edgeDistance) / peripherySize, 0f, 1f))
+private fun dotRadiusFactor(x: Float, y: Float, z: Float, screenSize: Size, screenDepthPx: Float, peripherySize: Float): Float {
+    return clamp(
+        2f - 2f * (edgeDistance(x, y, z, screenSize, screenDepthPx) / peripherySize).pow(2),
+        0f,
+        1f
+    )
+}
+
+private fun edgeDistance(x: Float, y: Float, z: Float, screenSize: Size, screenDepthPx: Float) =
+    max(0f, min(min(x, y), min(screenSize.width - x, screenSize.height - y))) * (1f + clamp(z / screenDepthPx, 0f, 1f))
 
 private fun startUpEffectRadius(startupEffectActive: Boolean, startupEffectProgress: Float, y: Float, screenSize: Size): Float =
     if (startupEffectActive) {
