@@ -83,6 +83,24 @@ class AppDataClient(context: Context, scope: CoroutineScope) {
         { data, value -> data.overlaySpeed = value },
         0.5f,
     )
+
+    @Composable
+    fun rememberForegroundOverlayStartTime(): MutableState<Long> = rememberAppData(
+        dataStore,
+        { data -> data.hasForegroundOverlayStartTime() },
+        { data -> data.foregroundOverlayStartTime },
+        { data, value -> data.foregroundOverlayStartTime = value },
+        0L,
+    )
+
+    @Composable
+    fun rememberForegroundOverlayStopTime(): MutableState<Long> = rememberAppData(
+        dataStore,
+        { data -> data.hasForegroundOverlayStopTime() },
+        { data -> data.foregroundOverlayStopTime },
+        { data, value -> data.foregroundOverlayStopTime = value },
+        0L,
+    )
 }
 
 class AppDataSerializer : Serializer<AppData> {

@@ -2,22 +2,19 @@ package com.leanrada.easyqueasy
 
 import AppDataOuterClass
 import AppDataOuterClass.DrawingMode
-import android.content.Context
-import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.leanrada.easyqueasy.Permissions.Companion.foregroundServicePermissions
 import com.leanrada.easyqueasy.Permissions.Companion.permissionsEnsurer
@@ -44,17 +41,16 @@ class MainActivity : ComponentActivity() {
         var drawingMode by appData.rememberDrawingMode()
         var onboarded by appData.rememberOnboarded()
         val ensureForegroundOverlayPermissions = permissionsEnsurer(foregroundServicePermissions)
-        val foregroundOverlayActive = remember { mutableStateOf(false) }
+        val localForegroundOverlayActive = rememberLocalForegroundOverlayActive()
 
-        val shouldActivateForegroundOverlay = drawingMode == DrawingMode.DRAW_OVER_OTHER_APPS && foregroundOverlayActive.value
+        val shouldActivateForegroundOverlay = drawingMode == DrawingMode.DRAW_OVER_OTHER_APPS && localForegroundOverlayActive.value
         LaunchedEffect(shouldActivateForegroundOverlay) {
             if (shouldActivateForegroundOverlay) {
                 ensureForegroundOverlayPermissions {
-                    startOverlayService(context)
+                    ForegroundOverlayService.start(context)
                 }
             } else {
-                foregroundOverlayActive.value = false
-                stopOverlayService(context)
+                ForegroundOverlayService.stop(context)
             }
         }
 
@@ -76,7 +72,7 @@ class MainActivity : ComponentActivity() {
                 else ->
                     HomeScreen(
                         appData = appData,
-                        foregroundOverlayActive = foregroundOverlayActive,
+                        foregroundOverlayActive = localForegroundOverlayActive,
                         debug_onReset = {
                             coroutineScope.launch {
                                 appData.dataStore.updateData {
@@ -88,16 +84,16 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-}
 
-fun startOverlayService(context: Context) {
-    Log.i(MainActivity::class.simpleName, "Starting foreground overlay service...")
-    val intent = Intent(context, ForegroundOverlayService::class.java)
-    ContextCompat.startForegroundService(context, intent)
-}
-
-fun stopOverlayService(context: Context) {
-    Log.i(MainActivity::class.simpleName, "Stopping foreground overlay service...")
-    val intent = Intent(context, ForegroundOverlayService::class.java)
-    context.stopService(intent)
+    @Composable
+    private fun rememberLocalForegroundOverlayActive(): MutableState<Boolean> {
+        val foregroundOverlayStartTime by appData.rememberForegroundOverlayStartTime()
+        val foregroundOverlayStopTime by appData.rememberForegroundOverlayStopTime()
+        val foregroundOverlayActive = foregroundOverlayStartTime > foregroundOverlayStopTime
+        val localForegroundOverlayActive = remember { mutableStateOf(foregroundOverlayActive) }
+        LaunchedEffect(foregroundOverlayActive) {
+            localForegroundOverlayActive.value = foregroundOverlayActive
+        }
+        return localForegroundOverlayActive
+    }
 }

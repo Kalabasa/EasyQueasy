@@ -148,14 +148,14 @@ fun ModeSelect(
                                     append(".")
                                 }
                             )
-                            Spacer(Modifier.size(8.dp))
                             FlowRow(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
                                 modifier = Modifier.fillMaxWidth(),
                             ) {
                                 Illustration(R.mipmap.app_button, "In-app button")
+                                Illustration(R.mipmap.quick_settings_tile, "Quick Settings tile")
                             }
-                            Spacer(Modifier.size(16.dp))
+                            Spacer(Modifier.size(24.dp))
                             Button(
                                 onClick = onSelectDrawOverOtherApps,
                                 colors = ButtonDefaults.buttonColors(
@@ -203,7 +203,6 @@ fun ModeSelect(
                                     append(", like a floating button or a swipe gesture.")
                                 }
                             )
-                            Spacer(Modifier.size(8.dp))
                             FlowRow(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
                                 modifier = Modifier.fillMaxWidth(),
@@ -211,7 +210,7 @@ fun ModeSelect(
                                 Illustration(R.mipmap.accessibility_shortcut, "Accessibility shortcut")
                                 Illustration(R.mipmap.accessibility_gesture, "Accessibility gesture")
                             }
-                            Spacer(Modifier.size(16.dp))
+                            Spacer(Modifier.size(24.dp))
                             Button(
                                 onClick = onSelectAccessibilityService,
                                 colors = ButtonDefaults.buttonColors(

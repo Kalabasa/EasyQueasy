@@ -155,7 +155,7 @@ class Permissions {
             }
         }
 
-        private fun checkPermissions(context: Context, permissions: Array<String>): Boolean {
+        fun checkPermissions(context: Context, permissions: Array<String>): Boolean {
             return permissions.all { ContextCompat.checkSelfPermission(context, it) == PERMISSION_GRANTED }
         }
 

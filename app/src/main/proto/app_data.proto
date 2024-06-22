@@ -3,10 +3,14 @@ syntax = "proto2";
 message AppData {
   optional bool onboarded = 1;
   optional bool onboardedAccessibilitySettings = 2;
+
   optional DrawingMode drawingMode = 3;
   optional OverlayColor overlayColor = 6;
   optional float overlayAreaSize = 4;
   optional float overlaySpeed = 5;
+
+  optional int64 foregroundOverlayStartTime = 7;
+  optional int64 foregroundOverlayStopTime = 8;
 }
 
 enum DrawingMode {
