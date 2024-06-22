@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import com.leanrada.easyqueasy.AppDataClient
 
@@ -16,8 +17,13 @@ fun ModeSelectScreen(
     Scaffold(
         modifier = Modifier.fillMaxSize(),
     ) { innerPadding ->
+        val loaded by appData.rememberLoaded()
+        val onboarded by appData.rememberOnboarded()
+
+        if (!loaded) return@Scaffold
+
         ModeSelect(
-            appData = appData,
+            withOnboarding = !onboarded,
             onSelectDrawOverOtherApps = onSelectDrawOverOtherApps,
             onSelectAccessibilityService = onSelectAccessibilityService,
             modifier = Modifier

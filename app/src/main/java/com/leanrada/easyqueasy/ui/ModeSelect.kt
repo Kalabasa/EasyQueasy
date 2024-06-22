@@ -1,13 +1,17 @@
 package com.leanrada.easyqueasy.ui
 
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -36,7 +40,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -47,26 +50,20 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.leanrada.easyqueasy.AppDataClient
 import com.leanrada.easyqueasy.R
 
 @Composable
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalLayoutApi::class)
 fun ModeSelect(
     modifier: Modifier = Modifier,
-    appData: AppDataClient,
+    withOnboarding: Boolean,
     onSelectDrawOverOtherApps: () -> Unit = {},
     onSelectAccessibilityService: () -> Unit = {},
 ) {
-    val loaded by appData.rememberLoaded()
-    val onboarded by appData.rememberOnboarded()
-
-    if (!loaded) return
-
     BoxWithConstraints {
         val constraints = this
 
-        if (!onboarded) {
+        if (withOnboarding) {
             Image(
                 painter = painterResource(R.mipmap.ic_launcher_foreground),
                 contentDescription = "",
@@ -86,7 +83,7 @@ fun ModeSelect(
             modifier = modifier.verticalScroll(rememberScrollState())
         ) {
             Column(Modifier.padding(top = 24.dp, start = 40.dp, end = 40.dp)) {
-                if (!onboarded) {
+                if (withOnboarding) {
                     Text(
                         "Ease that quease!",
                         style = MaterialTheme.typography.displaySmall,
@@ -96,12 +93,12 @@ fun ModeSelect(
                 Text(
                     "Choose your preferred mode",
                     style =
-                    if (onboarded)
-                        MaterialTheme.typography.titleLarge
+                    if (withOnboarding)
+                        MaterialTheme.typography.titleMedium
                     else
-                        MaterialTheme.typography.titleMedium,
+                        MaterialTheme.typography.titleLarge,
                 )
-                if (!onboarded) {
+                if (withOnboarding) {
                     Spacer(Modifier.size(16.dp))
                     Text(
                         "Get helpful onscreen vestibular signals using any of the following methods. You can change your selection anytime.",
@@ -151,7 +148,14 @@ fun ModeSelect(
                                     append(".")
                                 }
                             )
-                            Spacer(Modifier.weight(1f))
+                            Spacer(Modifier.size(8.dp))
+                            FlowRow(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Illustration(R.mipmap.app_button, "In-app button")
+                            }
+                            Spacer(Modifier.size(16.dp))
                             Button(
                                 onClick = onSelectDrawOverOtherApps,
                                 colors = ButtonDefaults.buttonColors(
@@ -199,7 +203,15 @@ fun ModeSelect(
                                     append(", like a floating button or a swipe gesture.")
                                 }
                             )
-                            Spacer(Modifier.weight(1f))
+                            Spacer(Modifier.size(8.dp))
+                            FlowRow(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Illustration(R.mipmap.accessibility_shortcut, "Accessibility shortcut")
+                                Illustration(R.mipmap.accessibility_gesture, "Accessibility gesture")
+                            }
+                            Spacer(Modifier.size(16.dp))
                             Button(
                                 onClick = onSelectAccessibilityService,
                                 colors = ButtonDefaults.buttonColors(
@@ -286,4 +298,16 @@ private fun ListItem(icon: ImageVector, text: AnnotatedString) {
             style = MaterialTheme.typography.bodyMedium
         )
     }
+}
+
+@Composable
+private fun Illustration(@DrawableRes drawable: Int, contentDescription: String) {
+    Image(
+        painter = painterResource(drawable),
+        contentDescription = contentDescription,
+        modifier = Modifier
+            .size(64.dp)
+            .clip(CircleShape)
+            .border(2.dp, MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f), CircleShape),
+    )
 }

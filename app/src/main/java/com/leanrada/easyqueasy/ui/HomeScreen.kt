@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -20,8 +19,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
@@ -174,22 +173,21 @@ fun OpenAccessibilitySettingsButton() {
         containerColor = MaterialTheme.colorScheme.tertiary,
         contentColor = MaterialTheme.colorScheme.onTertiary,
         modifier = Modifier
-            .padding(16.dp)
-            .height(80.dp),
+            .padding(16.dp),
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(16.dp),
         ) {
             Icon(
-                imageVector = Icons.Filled.Settings,
+                imageVector = Icons.Filled.ExitToApp,
                 contentDescription = "",
-                modifier = Modifier.size(40.dp),
+                modifier = Modifier.size(24.dp),
             )
             Spacer(Modifier.size(8.dp))
             Text(
-                text = "Open settings".uppercase(),
-                style = MaterialTheme.typography.labelLarge,
+                text = "Accessibility settings".uppercase(),
+                style = MaterialTheme.typography.labelMedium,
             )
         }
     }
@@ -213,7 +211,7 @@ private fun GetStartedSection(permissionChecker: PermissionChecker) {
                     GetStartedChecklistItem {
                         Text(
                             buildAnnotatedString {
-                                append("Grant ")
+                                append("First, grant ")
                                 appendBold("Easy Queasy")
                                 append(" the permission to draw over other apps.")
                             },
@@ -230,7 +228,7 @@ private fun GetStartedSection(permissionChecker: PermissionChecker) {
                     GetStartedChecklistItem {
                         Text(
                             buildAnnotatedString {
-                                append("Enable the ")
+                                append("First, enable the ")
                                 appendBold("Easy Queasy")
                                 append(" Accessibility app and shortcut. The permission will only be used to draw over apps.")
                             },

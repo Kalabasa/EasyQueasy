@@ -21,7 +21,7 @@ fun ModeSelectDialog(appData: AppDataClient, onDismissRequest: () -> Unit) {
             modifier = Modifier.wrapContentSize(),
         ) {
             ModeSelect(
-                appData = appData,
+                withOnboarding = false,
                 onSelectAccessibilityService = {
                     drawingMode = DrawingMode.ACCESSIBILITY_SERVICE
                     onDismissRequest()
