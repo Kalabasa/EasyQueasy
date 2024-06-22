@@ -2,10 +2,13 @@ package com.leanrada.easyqueasy.ui
 
 import AppDataOuterClass.DrawingMode
 import AppDataOuterClass.OverlayColor
+import android.app.StatusBarManager
 import android.content.Intent
+import android.os.Build
 import android.provider.Settings
-import androidx.compose.foundation.clickable
+import android.widget.Toast
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
@@ -20,13 +23,17 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
@@ -48,11 +55,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
 import androidx.core.content.ContextCompat
 import com.leanrada.easyqueasy.AppDataClient
 import com.leanrada.easyqueasy.PermissionChecker
 import com.leanrada.easyqueasy.Permissions
+import com.leanrada.easyqueasy.services.ForegroundOverlayTileService
 import com.leanrada.easyqueasy.ui.theme.disabledAlpha
 
 @Composable
@@ -68,7 +75,7 @@ fun HomeScreen(
 
     Scaffold(
         topBar = {
-            TopBar(onLongPressIcon = debug_onReset)
+            TopBar(appData = appData, onLongPressIcon = debug_onReset)
         },
         floatingActionButton = {
             if (permissionChecker.status == PermissionChecker.Status.OK) {
@@ -107,7 +114,13 @@ fun HomeScreen(
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
-private fun TopBar(onLongPressIcon: () -> Unit = {}) {
+private fun TopBar(appData: AppDataClient, onLongPressIcon: () -> Unit = {}) {
+    var context = LocalContext.current
+    var drawingMode by appData.rememberDrawingMode()
+    var quickSettingsTileAdded by appData.rememberQuickSettingsTileAdded()
+    var menuExpanded by remember { mutableStateOf(false) }
+    var modeSelectDialogActive by remember { mutableStateOf(false) }
+
     TopAppBar(
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -127,8 +140,55 @@ private fun TopBar(onLongPressIcon: () -> Unit = {}) {
                     style = MaterialTheme.typography.titleLarge,
                 )
             }
-        }
+        },
+        actions = {
+            IconButton(onClick = { menuExpanded = !menuExpanded }) {
+                Icon(Icons.Default.MoreVert, "More options")
+            }
+            DropdownMenu(
+                expanded = menuExpanded,
+                onDismissRequest = { menuExpanded = false },
+            ) {
+                DropdownMenuItem(
+                    text = { Text("Change mode") },
+                    onClick = {
+                        modeSelectDialogActive = true
+                        menuExpanded = false
+                    },
+                )
+
+                if (!quickSettingsTileAdded && drawingMode == DrawingMode.DRAW_OVER_OTHER_APPS && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    DropdownMenuItem(
+                        text = { Text("Add to Quick Settings") },
+                        onClick = {
+                            ForegroundOverlayTileService.requestAddTileService(context) {
+                                when (it) {
+                                    StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_ADDED, StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_ALREADY_ADDED ->
+                                        quickSettingsTileAdded = true // todo: revert when TileService::onTileRemoved
+                                }
+                            }
+                            menuExpanded = false
+                        }
+                    )
+                }
+
+                DropdownMenuItem(
+                    text = { Text("About") },
+                    onClick = {
+                        // todo: open website
+                        Toast.makeText(context, "Heh", Toast.LENGTH_SHORT).show()
+                        menuExpanded = false
+                    },
+                )
+            }
+        },
     )
+
+    if (modeSelectDialogActive) {
+        ModeSelectDialog(appData = appData) {
+            modeSelectDialogActive = false
+        }
+    }
 }
 
 @Composable
@@ -302,6 +362,22 @@ private fun SettingsSection(appData: AppDataClient, enabled: Boolean = false, se
                 .alpha(alphaForEnabled),
         ) {
             Column(Modifier.padding(horizontal = 24.dp, vertical = 8.dp)) {
+                Box {
+                    DropdownMenu(
+                        expanded = colorSchemeDialogActive,
+                        onDismissRequest = { colorSchemeDialogActive = false }
+                    ) {
+                        OverlayColor.values().forEach {
+                            DropdownMenuItem(
+                                text = { Text(overlayColorLabel(it)) },
+                                onClick = {
+                                    overlayColor = it
+                                    colorSchemeDialogActive = false
+                                },
+                            )
+                        }
+                    }
+                }
                 Text(
                     "Color scheme",
                     style = MaterialTheme.typography.bodyMedium,
@@ -311,26 +387,6 @@ private fun SettingsSection(appData: AppDataClient, enabled: Boolean = false, se
                     overlayColorLabel(overlayColor),
                     style = MaterialTheme.typography.bodyMedium,
                 )
-            }
-        }
-
-        if (colorSchemeDialogActive) {
-            Dialog(onDismissRequest = { colorSchemeDialogActive = false }) {
-                Card(colors = CardDefaults.elevatedCardColors()) {
-                    OverlayColor.values().forEach {
-                        Surface(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    overlayColor = it
-                                    colorSchemeDialogActive = false
-                                }
-                                .padding(16.dp)
-                        ) {
-                            Text(overlayColorLabel(it), style = MaterialTheme.typography.labelLarge)
-                        }
-                    }
-                }
             }
         }
 
@@ -376,35 +432,6 @@ private fun SettingsSection(appData: AppDataClient, enabled: Boolean = false, se
                 onValueChangeFinished = { setPreviewMode(PreviewMode.NONE) },
                 valueRange = 0f..1f,
             )
-        }
-
-        var modeSelectDialogActive by remember { mutableStateOf(false) }
-
-        Surface(
-            onClick = { modeSelectDialogActive = true },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(Modifier.padding(horizontal = 24.dp, vertical = 8.dp)) {
-                Text(
-                    "Mode",
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    when (drawingMode) {
-                        DrawingMode.DRAW_OVER_OTHER_APPS -> "Display over other apps"
-                        DrawingMode.ACCESSIBILITY_SERVICE -> "Accessibility service"
-                        DrawingMode.NONE -> ""
-                    },
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-            }
-        }
-
-        if (modeSelectDialogActive) {
-            ModeSelectDialog(appData = appData) {
-                modeSelectDialogActive = false
-            }
         }
     }
 }

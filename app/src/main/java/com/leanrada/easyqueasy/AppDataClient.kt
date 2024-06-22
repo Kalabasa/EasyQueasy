@@ -51,6 +51,14 @@ class AppDataClient(context: Context, scope: CoroutineScope) {
     )
 
     @Composable
+    fun rememberQuickSettingsTileAdded(): MutableState<Boolean> = rememberAppData(
+        dataStore,
+        { data -> data.hasQuickSettingsTileAdded() },
+        { data -> data.quickSettingsTileAdded },
+        { data, value -> data.quickSettingsTileAdded = value },
+    )
+
+    @Composable
     fun rememberDrawingMode(): MutableState<DrawingMode> = rememberAppData(
         dataStore,
         { data -> data.hasDrawingMode() },

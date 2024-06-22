@@ -4,13 +4,11 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
-import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
-import android.service.quicksettings.TileService
 import android.util.Log
 import android.view.View
 import android.view.WindowManager
@@ -108,7 +106,7 @@ class ForegroundOverlayService : Service(), SavedStateRegistryOwner {
                 }
             }
 
-            TileService.requestListeningState(this, ComponentName(this, ForegroundOverlayTileService::class.java))
+            ForegroundOverlayTileService.requestListeningState(this)
         } catch (e: Exception) {
             Log.e(ForegroundOverlayService::class.simpleName, "Adding overlay root view failed!", e)
         }
@@ -129,7 +127,7 @@ class ForegroundOverlayService : Service(), SavedStateRegistryOwner {
             }
         }
 
-        TileService.requestListeningState(this, ComponentName(this, ForegroundOverlayTileService::class.java))
+        ForegroundOverlayTileService.requestListeningState(this)
     }
 
     private fun startForegroundNotification() {

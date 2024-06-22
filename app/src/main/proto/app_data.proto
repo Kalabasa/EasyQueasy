@@ -3,6 +3,7 @@ syntax = "proto2";
 message AppData {
   optional bool onboarded = 1;
   optional bool onboardedAccessibilitySettings = 2;
+  optional bool quickSettingsTileAdded = 9;
 
   optional DrawingMode drawingMode = 3;
   optional OverlayColor overlayColor = 6;

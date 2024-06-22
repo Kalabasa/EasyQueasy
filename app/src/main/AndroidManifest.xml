@@ -52,6 +52,7 @@
             android:name=".services.ForegroundOverlayTileService"
             android:enabled="true"
             android:exported="true"
+            android:label="@string/easy_queasy"
             android:icon="@mipmap/monochrome_logo"
             android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
             android:process=":foreground_overlay">
