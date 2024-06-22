@@ -184,6 +184,7 @@ fun Overlay(
         val baseDotRadius = 4.dp.toPx() * finalEffectIntensity
 
         if (baseDotRadius > 0.15f || startupEffectActive) {
+            val screenDepthPx = screenDepth.toPx()
             val scaledPeripherySizePx = when (previewMode) {
                 PreviewMode.SPEED -> 30.dp.toPx()
                 else -> peripherySize.toPx() *
@@ -214,11 +215,11 @@ fun Overlay(
 
             val gridSizeX = 60f.dp.toPx()
             val gridSizeY = gridSizeX / hexRatio
-            val gridSizeZ = gridSizeX * 3f
+            val gridSizeZ = screenDepthPx * 0.8f
 
             for (x in -2 until (size.width / gridSizeX + 2).toInt()) {
-                for (y in -4 until (size.height / gridSizeY + 2).toInt()) {
-                    for (z in -1 until (screenDepth.toPx() / gridSizeZ + 2).toInt()) {
+                for (y in -4 until (size.height / gridSizeY + 4).toInt()) {
+                    for (z in -1 until (screenDepthPx / gridSizeZ + 2).toInt()) {
                         val pixelX = (x + 0.5f + (y % 2) * 0.5f) * gridSizeX + offsetXPx % gridSizeX
                         val pixelY = (y + 0.5f + (z % 2) * 1.3333f) * gridSizeY + offsetYPx % (gridSizeY * 2)
                         val pixelZ = z * gridSizeZ + offsetZPx % (gridSizeZ * 2)
@@ -279,7 +280,7 @@ private fun DrawScope.drawParticle(
 ) {
     val eyeZPx = eyeZ.toPx()
     val screenDepthPx = screenDepth.toPx()
-    val strokeWidth = 2f * dotRadius(
+    val dotRadius = 2f * dotRadius(
         pixelX,
         pixelY,
         pixelZ,
@@ -290,14 +291,16 @@ private fun DrawScope.drawParticle(
         startupEffectActive,
         startupEffectProgress
     )
-    if (strokeWidth > 0f) {
+    if (dotRadius > 0f) {
+        val start = perspective(pixelX, pixelY, pixelZ, size)
+        val end = perspective(pixelTrailX, pixelTrailY, pixelTrailZ, size)
         drawLine(
             color = color,
             alpha = 1f - min(abs((pixelZ - screenDepthPx * 0.5f) / (screenDepthPx * 0.5f)), 1f).pow(2),
             cap = StrokeCap.Round,
-            start = perspective(pixelX, pixelY, pixelZ, size),
-            end = perspective(pixelTrailX, pixelTrailY, pixelTrailZ, size),
-            strokeWidth = strokeWidth * (eyeZPx / (pixelZ + eyeZPx))
+            start = start,
+            end = end,
+            strokeWidth = max(1f, dotRadius - end.minus(start).getDistance() * 0.44f) * (eyeZPx / (pixelZ + eyeZPx))
         )
     }
 }
@@ -310,7 +313,7 @@ private fun Density.perspective(x: Float, y: Float, z: Float, screenSize: Size):
     )
 }
 
-private fun dotRadius(
+private fun Density.dotRadius(
     x: Float,
     y: Float,
     z: Float,
@@ -326,16 +329,18 @@ private fun dotRadius(
             baseDotRadius * dotRadiusFactor(x, y, z, screenSize, screenDepthPx, scaledPeripherySizePx)
         ) + startUpEffectRadius(startupEffectActive, startupEffectProgress, y, screenSize))
 
-private fun dotRadiusFactor(x: Float, y: Float, z: Float, screenSize: Size, screenDepthPx: Float, peripherySize: Float): Float {
+private fun Density.dotRadiusFactor(x: Float, y: Float, z: Float, screenSize: Size, screenDepthPx: Float, peripherySize: Float): Float {
     return clamp(
-        2f - 2f * (edgeDistance(x, y, z, screenSize, screenDepthPx) / peripherySize).pow(2),
+        1f - min(1f, edgeDistance(x, y, z, screenSize) / peripherySize),
         0f,
         1f
     )
 }
 
-private fun edgeDistance(x: Float, y: Float, z: Float, screenSize: Size, screenDepthPx: Float) =
-    max(0f, min(min(x, y), min(screenSize.width - x, screenSize.height - y))) * (1f + clamp(z / screenDepthPx, 0f, 1f))
+private fun Density.edgeDistance(x: Float, y: Float, z: Float, screenSize: Size): Float {
+    val (px, py) = perspective(x, y, z, screenSize)
+    return max(0f, min(min(px, py), min(screenSize.width - px, screenSize.height - py)))
+}
 
 private fun startUpEffectRadius(startupEffectActive: Boolean, startupEffectProgress: Float, y: Float, screenSize: Size): Float =
     if (startupEffectActive) {
